@@ -1,0 +1,12 @@
+# Normalize all text files to LF
+* text=auto
+
+# Force LF endings for shell scripts
+*.sh text eol=lf
+
+# Force CRLF endings for Windows project files
+*.sln text eol=crlf
+
+# Treat binary files as-is
+*.png binary
+*.jpg binary
