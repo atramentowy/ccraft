@@ -17,10 +17,15 @@ add_subdirectory(libs/glfw)
 find_package(OpenGL REQUIRED)
 
 # Executable
-add_executable(${PROJECT_NAME} src/main.c)
+add_executable(
+    ${PROJECT_NAME}
+    src/shader.c
+    src/main.c
+)
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(
+    ${PROJECT_NAME}
     PRIVATE glad
     PRIVATE glfw
     PRIVATE OpenGL::GL

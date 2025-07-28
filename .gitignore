@@ -1,5 +1,6 @@
 # My ignores
 build/
+.vscode/
 
 # Prerequisites
 *.d
