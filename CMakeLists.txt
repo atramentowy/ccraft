@@ -3,7 +3,7 @@ project(ccraft C)
 
 # GLAD
 add_library(glad libs/glad/src/glad.c)
-target_include_directories(glad PUBLIC libs/glad/include)
+target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/libs/glad/include)
 
 # GLFW
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -12,6 +12,9 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
 add_subdirectory(libs/glfw)
+
+# CGLM
+add_subdirectory(libs/cglm)
 
 # Find OpenGL
 find_package(OpenGL REQUIRED)
@@ -28,6 +31,7 @@ target_link_libraries(
     ${PROJECT_NAME}
     PRIVATE glad
     PRIVATE glfw
+    PRIVATE cglm
     PRIVATE OpenGL::GL
 )
 

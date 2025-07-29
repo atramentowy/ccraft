@@ -3,6 +3,7 @@
 
 #include <glad/glad.h>
 #include <stdbool.h>
+#include <cglm/cglm.h>
 
 typedef struct {
 	unsigned int ID;
@@ -13,5 +14,7 @@ void shader_use(Shader* shader);
 void shader_set_bool(Shader* shader, const char* name, bool value);
 void shader_set_int(Shader* shader, const char* name, int value);
 void shader_set_float(Shader* shader, const char* name, float value);
+
+void shader_set_mat4(Shader* shader, const char* name, const mat4 matrix);
 
 #endif
