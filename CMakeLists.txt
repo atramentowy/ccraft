@@ -23,6 +23,8 @@ find_package(OpenGL REQUIRED)
 add_executable(
     ${PROJECT_NAME}
     src/shader.c
+    src/chunk.c
+    src/world.c
     src/main.c
 )
 

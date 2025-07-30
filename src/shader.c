@@ -6,7 +6,7 @@
 static char* read_file(const char* path) {
 	FILE* file = fopen(path, "rb");
 	if(!file) {
-		fprintf(stderr, "Shader: failed to open file: %s\n", path);
+		fprintf(stderr, "ERROR::FAILED TO OPEN FILE: %s\n", path);
 		return NULL;
 	}
 
@@ -84,18 +84,37 @@ void shader_use(Shader* shader) {
 }
 
 void shader_set_bool(Shader* shader, const char* name, bool value) {
+	GLint loc = glGetUniformLocation(shader->ID, name);
+    if (loc == -1) {
+        fprintf(stderr, "WARNING: uniform '%s' not found in shader\n", name);
+        return;
+    }
 	glUniform1i(glGetUniformLocation(shader->ID, name), value);
 }
 
 void shader_set_int(Shader* shader, const char* name, int value) {
+	GLint loc = glGetUniformLocation(shader->ID, name);
+    if (loc == -1) {
+        fprintf(stderr, "WARNING: uniform '%s' not found in shader\n", name);
+        return;
+    }
 	glUniform1i(glGetUniformLocation(shader->ID, name), value);
 }
 
 void shader_set_float(Shader* shader, const char* name, float value) {
-	glUniform1i(glGetUniformLocation(shader->ID, name), value);
+	GLint loc = glGetUniformLocation(shader->ID, name);
+    if (loc == -1) {
+        fprintf(stderr, "WARNING: uniform '%s' not found in shader\n", name);
+        return;
+    }
+	glUniform1f(glGetUniformLocation(shader->ID, name), value);
 }
 
 void shader_set_mat4(Shader* shader, const char* name, const mat4 matrix) {
     GLint loc = glGetUniformLocation(shader->ID, name);
+	if (loc == -1) {
+        fprintf(stderr, "WARNING: uniform '%s' not found in shader\n", name);
+        return;
+    }
     glUniformMatrix4fv(loc, 1, GL_FALSE, (const float*)matrix);
 }
