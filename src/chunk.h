@@ -17,6 +17,7 @@ typedef struct {
     BlockType blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 
     GLuint vao, vbo, ebo;
+
 } Chunk;
 
 void chunk_init(Chunk* chunk);

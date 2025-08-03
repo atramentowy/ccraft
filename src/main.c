@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <cglm/cglm.h>
 
+#include "filepath.h"
 #include "shader.h"
 #include "camera.h"
 #include "world.h"
@@ -94,7 +95,10 @@ int main() {
 	camera_init(&camera, position, up, CAMERA_YAW, CAMERA_PITCH);
 
 	// shader
-	Shader myShader = shader_create("../res/shaders/camera.vert", "../res/shaders/camera.frag");
+	Shader myShader = shader_create(
+   		get_absolute_path("res/shaders/camera.vert"),
+    	get_absolute_path("res/shaders/camera.frag")
+	);
 	shader_use(&myShader);
 
 	World world;
