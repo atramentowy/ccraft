@@ -134,8 +134,7 @@ int main() {
 		world_draw(&world, &myShader);
 
 		GLenum err = glGetError();
-		if (err != GL_NO_ERROR)
-				fprintf(stderr, "GL error: 0x%X\n", err);
+		if (err != GL_NO_ERROR)	fprintf(stderr, "GL error: 0x%X\n", err);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
