@@ -16,6 +16,9 @@ add_subdirectory(libs/glfw)
 # CGLM
 add_subdirectory(libs/cglm)
 
+# stb_image.h
+include_directories(${CMAKE_SOURCE_DIR}/libs/stb_image)
+
 # Find OpenGL
 find_package(OpenGL REQUIRED)
 
@@ -23,6 +26,7 @@ find_package(OpenGL REQUIRED)
 add_executable(
     ${PROJECT_NAME}
     src/shader.c
+	src/texture.c
     src/chunk.c
     src/world.c
     src/main.c

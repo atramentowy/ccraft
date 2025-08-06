@@ -6,6 +6,7 @@
 
 #include "filepath.h"
 #include "shader.h"
+#include "texture.h"
 #include "camera.h"
 #include "world.h"
 
@@ -23,8 +24,8 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // timing
-float deltaTime = 0.0f;	// time between current frame and last frame
-float lastFrame = 0.0f;
+float delta_time = 0.0f;	// time between current frame and last frame
+float last_frame = 0.0f;
 
 void error_callback(int error, const char* description) {
 	fprintf(stderr, "GLFW Error (%d): %s\n", error, description);
@@ -35,13 +36,13 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera_process_keyboard(&camera, CAMERA_FORWARD,  deltaTime);
+        camera_process_keyboard(&camera, CAMERA_FORWARD,  delta_time);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera_process_keyboard(&camera, CAMERA_BACKWARD, deltaTime);
+        camera_process_keyboard(&camera, CAMERA_BACKWARD, delta_time);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera_process_keyboard(&camera, CAMERA_LEFT,     deltaTime);
+        camera_process_keyboard(&camera, CAMERA_LEFT,     delta_time);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera_process_keyboard(&camera, CAMERA_RIGHT,    deltaTime);
+        camera_process_keyboard(&camera, CAMERA_RIGHT,    delta_time);
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -96,23 +97,29 @@ int main() {
 
 	// shader
 	Shader myShader = shader_create(
-   		get_absolute_path("res/shaders/camera.vert"),
-    	get_absolute_path("res/shaders/camera.frag")
+   		get_absolute_path("res/shaders/shader.vert"),
+    	get_absolute_path("res/shaders/shader.frag")
 	);
 	shader_use(&myShader);
+
+	// texture atlas
+	Texture atlas = texture_create(get_absolute_path("res/atlas.png"), GL_TEXTURE_2D);
+	texture_bind(&atlas, 0);
+
+	shader_set_int(&myShader, "blockTexture", 0);
 
 	World world;
 	world_init(&world);
 	world_rebuild(&world);
-
+	
 	glEnable(GL_DEPTH_TEST);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_CULL_FACE);
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	while(!glfwWindowShouldClose(window)) {
 		float now = (float)glfwGetTime();
-		deltaTime = now - lastFrame;
-		lastFrame = now;
+		delta_time = now - last_frame;
+		last_frame = now;
 
 		processInput(window);
 
@@ -132,9 +139,6 @@ int main() {
 		shader_set_mat4(&myShader, "view", view);
 
 		world_draw(&world, &myShader);
-
-		GLenum err = glGetError();
-		if (err != GL_NO_ERROR)	fprintf(stderr, "GL error: 0x%X\n", err);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
