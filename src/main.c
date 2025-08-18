@@ -5,10 +5,12 @@
 #include <cglm/cglm.h>
 
 #include "filepath.h"
+#include "render_context.h"
 #include "shader.h"
 #include "texture.h"
 #include "camera.h"
 #include "world.h"
+#include "frustum.h"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -16,15 +18,21 @@ const unsigned int SCR_HEIGHT = 600;
 
 // camera
 Camera camera;
-vec3 position = {0.0f, 0.0f, 3.0f};
+vec3 position = {0.0f, 16.0f, 3.0f};
 vec3 up       = {0.0f, 1.0f, 0.0f};
+
+#define fov_y (60.0f * (M_PI / 180.0f))
+//float fov_y = glm_rad(45.0f);
+
+float z_near = 0.0f;
+float z_far = 100.0f;
 
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // timing
-float delta_time = 0.0f;	// time between current frame and last frame
+float delta_time = 0.0f; // time between current frame and last frame
 float last_frame = 0.0f;
 
 void error_callback(int error, const char* description) {
@@ -95,6 +103,7 @@ int main() {
 
 	camera_init(&camera, position, up, CAMERA_YAW, CAMERA_PITCH);
 
+	// todo: resource manager for shaders and textures maybe sounds
 	// shader
 	Shader myShader = shader_create(
    		get_absolute_path("res/shaders/shader.vert"),
@@ -113,9 +122,10 @@ int main() {
 	world_rebuild(&world);
 	
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
+	// glEnable(GL_CULL_FACE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	
+	RenderContext ctx;
 	while(!glfwWindowShouldClose(window)) {
 		float now = (float)glfwGetTime();
 		delta_time = now - last_frame;
@@ -128,17 +138,22 @@ int main() {
 
 		mat4 projection;
 		glm_perspective(
-			glm_rad(camera.Zoom),
-            (float)SCR_WIDTH/SCR_HEIGHT,
+			glm_rad(camera.zoom),
+            (float)SCR_WIDTH / SCR_HEIGHT,
             0.1f, 100.0f, projection
 		);
-		shader_set_mat4(&myShader, "projection", projection);
+		// shader_set_mat4(&myShader, "projection", projection);
+		memcpy(ctx.projection, projection, sizeof(mat4));
 
 		mat4 view;
 		camera_get_view_matrix(&camera, view);
-		shader_set_mat4(&myShader, "view", view);
+		// shader_set_mat4(&myShader, "view", view);
+		memcpy(ctx.view, view, sizeof(mat4));
 
-		world_draw(&world, &myShader);
+		Frustum frustum = create_frustum_from_camera(&camera, (float)SCR_WIDTH / (float)SCR_HEIGHT, fov_y, z_near, z_far);
+		ctx.frustum = frustum;	
+
+		world_draw(&ctx, &world, &myShader);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

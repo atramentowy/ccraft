@@ -1,27 +1,5 @@
 #include "world.h"
-
-/*
-int chunk_index(int x, int y, int z) {
-	return x + WORLD_SIZE_X * (y + WORLD_SIZE_Y * z);
-}
-
-void chunk_coords_from_index(int index, int* x, int* y, int* z) {
-    *x = index % WORLD_SIZE_X;
-    *y = (index / WORLD_SIZE_X) % WORLD_SIZE_Y;
-    *z = index / (WORLD_SIZE_X * WORLD_SIZE_Y);
-}
-
-Chunk* world_get_chunk_at(World* world, int x, int y, int z) {
-    if (x < 0 || x >= WORLD_SIZE_X ||
-        y < 0 || y >= WORLD_SIZE_Y ||
-        z < 0 || z >= WORLD_SIZE_Z) {
-        return NULL;
-    }
-
-    int index = 0; // chunk_index(x, y, z);
-    return &world->chunks[index];
-}
-*/
+#include "frustum.h"
 
 Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
 	int offset_x(Direction dir) {
@@ -91,23 +69,34 @@ void world_rebuild(World* world) {
     }
 }
 
-void world_draw(const World* world, Shader* shader) {
+void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
+	shader_use(shader);
+	shader_set_mat4(shader, "projection", ctx->projection);
+	shader_set_mat4(shader, "view", ctx->view);
+
     for (int x = 0; x < WORLD_SIZE_X; x++) {
         for (int y = 0; y < WORLD_SIZE_Y; y++) {
             for (int z = 0; z < WORLD_SIZE_Z; z++) {
+				Chunk* chunk = &world->chunks[x][y][z];
+
+				// update visibility
+				chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z);
+
+				if(!chunk->visible) continue;
+
+				// set model matrix
 				mat4 model;
 				glm_mat4_identity(model);
-
 				vec3 translation = {
 					x * CHUNK_SIZE,
 					y * CHUNK_SIZE,
 					z * CHUNK_SIZE
 				};
 				glm_translate(model, translation);
-
 				shader_set_mat4(shader, "model", model);
 
-				chunk_draw(&world->chunks[x][y][z], shader);
+				// draw chunk
+				chunk_draw(chunk, shader);
             }
         }
     }

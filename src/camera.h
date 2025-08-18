@@ -11,7 +11,7 @@ typedef enum {
     CAMERA_BACKWARD,
     CAMERA_LEFT,
     CAMERA_RIGHT
-} Camera_Movement;
+} CameraMovementDir;
 
 // Default camera values
 #define CAMERA_YAW         -90.0f
@@ -21,93 +21,93 @@ typedef enum {
 #define CAMERA_ZOOM         45.0f
 
 typedef struct {
-    vec3 Position;
-    vec3 Front;
-    vec3 Up;
-    vec3 Right;
-    vec3 WorldUp;
+    vec3 position;
+    vec3 front;
+    vec3 up;
+    vec3 right;
+    vec3 world_up;
 
-    float Yaw;
-    float Pitch;
+    float yaw;
+    float pitch;
 
-    float MovementSpeed;
-    float MouseSensitivity;
-    float Zoom;
+    float movement_speed;
+    float mouse_sensitivity;
+    float zoom;
 } Camera;
 
 // Internal helper to update camera vectors
 static inline void update_camera_vectors(Camera *cam) {
     vec3 front;
-    front[0] = cosf(glm_rad(cam->Yaw)) * cosf(glm_rad(cam->Pitch));
-    front[1] = sinf(glm_rad(cam->Pitch));
-    front[2] = sinf(glm_rad(cam->Yaw)) * cosf(glm_rad(cam->Pitch));
-    glm_normalize_to(front, cam->Front);
+    front[0] = cosf(glm_rad(cam->yaw)) * cosf(glm_rad(cam->pitch));
+    front[1] = sinf(glm_rad(cam->pitch));
+    front[2] = sinf(glm_rad(cam->yaw)) * cosf(glm_rad(cam->pitch));
+    glm_normalize_to(front, cam->front);
 
-    glm_cross(cam->Front, cam->WorldUp, cam->Right);
-    glm_normalize(cam->Right);
+    glm_cross(cam->front, cam->world_up, cam->right);
+    glm_normalize(cam->right);
 
-    glm_cross(cam->Right, cam->Front, cam->Up);
-    glm_normalize(cam->Up);
+    glm_cross(cam->right, cam->front, cam->up);
+    glm_normalize(cam->up);
 }
 
 // Initialize camera with position, up vector, yaw and pitch
 static inline void camera_init(Camera *cam, vec3 position, vec3 up, float yaw, float pitch) {
-    glm_vec3_copy(position, cam->Position);
-    glm_vec3_copy(up, cam->WorldUp);
-    cam->Yaw = yaw;
-    cam->Pitch = pitch;
-    cam->MovementSpeed = CAMERA_SPEED;
-    cam->MouseSensitivity = CAMERA_SENSITIVITY;
-    cam->Zoom = CAMERA_ZOOM;
-    glm_vec3_copy((vec3){0.0f, 0.0f, -1.0f}, cam->Front);
+    glm_vec3_copy(position, cam->position);
+    glm_vec3_copy(up, cam->world_up);
+    cam->yaw = yaw;
+    cam->pitch = pitch;
+    cam->movement_speed = CAMERA_SPEED;
+    cam->mouse_sensitivity = CAMERA_SENSITIVITY;
+    cam->zoom = CAMERA_ZOOM;
+    glm_vec3_copy((vec3){0.0f, 0.0f, -1.0f}, cam->front);
     update_camera_vectors(cam);
 }
 
 // Get view matrix from camera
 static inline void camera_get_view_matrix(Camera *cam, mat4 view) {
     vec3 center;
-    glm_vec3_add(cam->Position, cam->Front, center);
-    glm_lookat(cam->Position, center, cam->Up, view);
+    glm_vec3_add(cam->position, cam->front, center);
+    glm_lookat(cam->position, center, cam->up, view);
 }
 
 // Process keyboard input
-static inline void camera_process_keyboard(Camera *cam, Camera_Movement direction, float deltaTime) {
-    float velocity = cam->MovementSpeed * deltaTime;
+static inline void camera_process_keyboard(Camera *cam, CameraMovementDir direction, float delta_time) {
+    float velocity = cam->movement_speed * delta_time;
     vec3 offset;
 
     switch (direction) {
         case CAMERA_FORWARD:
-            glm_vec3_scale(cam->Front, velocity, offset);
-            glm_vec3_add(cam->Position, offset, cam->Position);
+            glm_vec3_scale(cam->front, velocity, offset);
+            glm_vec3_add(cam->position, offset, cam->position);
             break;
         case CAMERA_BACKWARD:
-            glm_vec3_scale(cam->Front, velocity, offset);
-            glm_vec3_sub(cam->Position, offset, cam->Position);
+            glm_vec3_scale(cam->front, velocity, offset);
+            glm_vec3_sub(cam->position, offset, cam->position);
             break;
         case CAMERA_LEFT:
-            glm_vec3_scale(cam->Right, velocity, offset);
-            glm_vec3_sub(cam->Position, offset, cam->Position);
+            glm_vec3_scale(cam->right, velocity, offset);
+            glm_vec3_sub(cam->position, offset, cam->position);
             break;
         case CAMERA_RIGHT:
-            glm_vec3_scale(cam->Right, velocity, offset);
-            glm_vec3_add(cam->Position, offset, cam->Position);
+            glm_vec3_scale(cam->right, velocity, offset);
+            glm_vec3_add(cam->position, offset, cam->position);
             break;
     }
 }
 
 // Process mouse movement
-static inline void camera_process_mouse(Camera *cam, float xoffset, float yoffset, bool constrainPitch) {
-    xoffset *= cam->MouseSensitivity;
-    yoffset *= cam->MouseSensitivity;
+static inline void camera_process_mouse(Camera *cam, float xoffset, float yoffset, bool constrain_pitch) {
+    xoffset *= cam->mouse_sensitivity;
+    yoffset *= cam->mouse_sensitivity;
 
-    cam->Yaw += xoffset;
-    cam->Pitch += yoffset;
+    cam->yaw += xoffset;
+    cam->pitch += yoffset;
 
-    if (constrainPitch) {
-        if (cam->Pitch > 89.0f)
-            cam->Pitch = 89.0f;
-        if (cam->Pitch < -89.0f)
-            cam->Pitch = -89.0f;
+    if (constrain_pitch) {
+        if (cam->pitch > 89.0f)
+            cam->pitch = 89.0f;
+        if (cam->pitch < -89.0f)
+            cam->pitch = -89.0f;
     }
 
     update_camera_vectors(cam);
@@ -115,11 +115,11 @@ static inline void camera_process_mouse(Camera *cam, float xoffset, float yoffse
 
 // Process mouse scroll
 static inline void camera_process_scroll(Camera *cam, float yoffset) {
-    cam->Zoom -= yoffset;
-    if (cam->Zoom < 1.0f)
-        cam->Zoom = 1.0f;
-    if (cam->Zoom > 45.0f)
-        cam->Zoom = 45.0f;
+    cam->zoom -= yoffset;
+    if (cam->zoom < 1.0f)
+        cam->zoom = 1.0f;
+    if (cam->zoom > 45.0f)
+        cam->zoom = 45.0f;
 }
 
 #endif // CAMERA_H

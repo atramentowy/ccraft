@@ -3,6 +3,7 @@
 
 #include <glad/glad.h>
 #include <cglm/cglm.h>
+#include <stdbool.h>
 
 #include "shader.h"
 
@@ -43,6 +44,9 @@ typedef struct {
 	GLuint vao;
 	GLuint vbo;
 	GLuint ebo;
+
+	bool is_dirty;
+	bool visible;
 } Chunk;
 
 void chunk_init(Chunk* chunk);
