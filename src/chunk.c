@@ -35,7 +35,13 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type) {
         {{-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}}
     };
 
-    chunk->vertices = realloc(chunk->vertices, sizeof(Vertex) * (chunk->vertex_count + 4));
+    Vertex* new_vertices = realloc(chunk->vertices, sizeof(Vertex) * (chunk->vertex_count + 4));
+	if (!new_vertices) {
+		fprintf(stderr, "Failed to realloc vertices\n");
+		return;
+	}
+	chunk->vertices = new_vertices;
+
     for (int i = 0; i < 4; ++i) {
         Vertex v;
         glm_vec3_copy(face_offsets[face][i], v.position);
@@ -46,7 +52,15 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type) {
     }
 
     unsigned int base = (unsigned int)(chunk->vertex_count - 4);
-    chunk->indices = realloc(chunk->indices, sizeof(unsigned int) * (chunk->index_count + 6));
+
+
+    unsigned int* new_indices = realloc(chunk->indices, sizeof(unsigned int) * (chunk->index_count + 6));
+	if (!new_indices) {
+		fprintf(stderr, "Failed to realloc indices\n");
+		return;
+	}
+	chunk->indices = new_indices;
+
     chunk->indices[chunk->index_count++] = base;
     chunk->indices[chunk->index_count++] = base + 1;
     chunk->indices[chunk->index_count++] = base + 2;
@@ -58,13 +72,13 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type) {
 void chunk_init(Chunk* chunk) {
 	memset(chunk->blocks, BLOCK_AIR, sizeof(chunk->blocks));
 	for(int x = 0; x < CHUNK_SIZE; x++) {
-		chunk->blocks[x][0][0] = BLOCK_GRASS;
+		chunk->blocks[x][0][0] = BLOCK_DIRT;
 	}
 	for(int y = 0; y < CHUNK_SIZE; y++) {
 		chunk->blocks[0][y][0] = BLOCK_GRASS;
 	}
 	for(int z = 0; z < CHUNK_SIZE; z++) {
-		chunk->blocks[0][0][z] = BLOCK_GRASS;
+		chunk->blocks[0][0][z] = BLOCK_STONE;
 	}
 
 	chunk->vertices = NULL;

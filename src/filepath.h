@@ -30,7 +30,12 @@ char* get_self_directory(void) {
     char exe_path[1024];
     DWORD path_length = GetModuleFileNameA(NULL, exe_path, sizeof(exe_path) - 1);
     if (path_length == 0)
-        return NULL;
+        return NULL;char* make_path(const char* relative_path) {
+    char* absolute = malloc(PATH_MAX);
+    if (!absolute) return NULL;
+    path_make_absolute(absolute, relative_path);
+    return absolute;
+}
 
     exe_path[path_length] = '\0';
 
@@ -68,37 +73,34 @@ char* get_parent_directory(const char* path) {
     return strdup(temp);
 }
 
-char* get_absolute_path(const char* relative_path) {
-    if (!relative_path) {
-        fprintf(stderr, "FILEPATH ERROR: relative path is NULL\n");
-        return NULL;
+int path_make_absolute(char* out_path, const char* relative_path) {
+	if (!out_path || !relative_path) {
+        fprintf(stderr, "FILEPATH ERROR: relative_path or out_pathpath is NULL\n");
+        return -1;
     }
 
     char* self_dir = get_self_directory();
-    if (!self_dir)
-        return NULL;
+    if (!self_dir) return -1;
 
     char* base = get_parent_directory(self_dir);
-    free(self_dir);
-
-    if (!base)
-        return NULL;
-
-    size_t total_len = strlen(base) + strlen(relative_path) + 2;
-    char* full_path = malloc(total_len);
-    if (!full_path) {
-        free(base);
-        return NULL;
-    }
+    if (!base) return -1;
 
 #if defined(_WIN32)
-    snprintf(full_path, total_len, "%s\\%s", base, relative_path);
+    snprintf(out_path, 1024, "%s\\%s", base, relative_path);
 #else
-    snprintf(full_path, total_len, "%s/%s", base, relative_path);
+    snprintf(out_path, 1024, "%s/%s", base, relative_path);
 #endif
 
-    free(base);
-    return full_path;
+	free(self_dir);
+	free(base);
+	return 0;
+}
+
+char* make_path(char* path) {
+    char* absolute = malloc(1024);
+    if (!absolute) return NULL;
+    path_make_absolute(absolute, path);
+    return absolute;
 }
 
 #endif // FILEPATH_H

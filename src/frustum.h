@@ -23,7 +23,6 @@ typedef struct {
     Plane far_face;
 } Frustum;
 
-
 static inline Frustum create_frustum_from_camera(
     const Camera* cam,
     float aspect,
@@ -33,16 +32,14 @@ static inline Frustum create_frustum_from_camera(
 ) {
     Frustum frustum;
 
-    // Normalize camera vectors
     vec3 forward, up, right;
-    glm_vec3_copy(cam->front, forward); glm_vec3_normalize(forward);
-    glm_vec3_copy(cam->up, up);         glm_vec3_normalize(up);
-    glm_vec3_copy(cam->right, right);   glm_vec3_normalize(right);
+    glm_vec3_copy((float*)cam->front, forward); glm_vec3_normalize(forward);
+    glm_vec3_copy((float*)cam->up, up);         glm_vec3_normalize(up);
+    glm_vec3_copy((float*)cam->right, right);   glm_vec3_normalize(right);
 
     vec3 cam_pos;
-    glm_vec3_copy(cam->position, cam_pos);
+    glm_vec3_copy((float*)cam->position, cam_pos);
 
-    // Compute near and far plane centers
     vec3 near_center, far_center;
     glm_vec3_scale(forward, z_near, near_center);
     glm_vec3_add(cam_pos, near_center, near_center);
@@ -50,26 +47,25 @@ static inline Frustum create_frustum_from_camera(
     glm_vec3_scale(forward, z_far, far_center);
     glm_vec3_add(cam_pos, far_center, far_center);
 
-    // Compute plane dimensions
     float tan_fov = tanf(fov_y * 0.5f);
     float near_height = z_near * tan_fov;
     float near_width  = near_height * aspect;
     float far_height  = z_far * tan_fov;
     float far_width   = far_height * aspect;
 
-    // Near plane
+    // near plane
     glm_vec3_copy(forward, frustum.near_face.normal);
     glm_vec3_normalize(frustum.near_face.normal);
     frustum.near_face.distance = glm_vec3_dot(frustum.near_face.normal, near_center);
 
-    // Far plane
+    // far plane
     vec3 neg_forward;
     glm_vec3_negate_to(forward, neg_forward);
     glm_vec3_copy(neg_forward, frustum.far_face.normal);
     glm_vec3_normalize(frustum.far_face.normal);
     frustum.far_face.distance = glm_vec3_dot(frustum.far_face.normal, far_center);
 
-    // Right plane
+    // right plane
     {
         vec3 far_right, point;
         glm_vec3_scale(right, far_width, far_right);
@@ -82,7 +78,7 @@ static inline Frustum create_frustum_from_camera(
         frustum.right_face.distance = glm_vec3_dot(frustum.right_face.normal, point);
     }
 
-    // Left plane
+    // left plane
     {
         vec3 far_left, point;
         glm_vec3_scale(right, far_width, far_left);
@@ -95,7 +91,7 @@ static inline Frustum create_frustum_from_camera(
         frustum.left_face.distance = glm_vec3_dot(frustum.left_face.normal, point);
     }
 
-    // Top plane
+    // top plane
     {
         vec3 far_top, point;
         glm_vec3_scale(up, far_height, far_top);
@@ -108,7 +104,7 @@ static inline Frustum create_frustum_from_camera(
         frustum.top_face.distance = glm_vec3_dot(frustum.top_face.normal, point);
     }
 
-    // Bottom plane
+	// bottom plane
     {
         vec3 far_bottom, point;
         glm_vec3_scale(up, far_height, far_bottom);

@@ -4,9 +4,9 @@
 #include "chunk.h"
 #include "render_context.h"
 
-#define WORLD_SIZE_X 5
-#define WORLD_SIZE_Y 5
-#define WORLD_SIZE_Z 5
+#define WORLD_SIZE_X 4
+#define WORLD_SIZE_Y 4
+#define WORLD_SIZE_Z 4
 
 typedef struct World {
     Chunk chunks[WORLD_SIZE_X][WORLD_SIZE_Y][WORLD_SIZE_Z];

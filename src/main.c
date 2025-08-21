@@ -83,6 +83,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	GLFWwindow* window = glfwCreateWindow(800, 600, "ccraft", NULL, NULL);
 	if(!window) {
@@ -103,17 +104,30 @@ int main() {
 
 	camera_init(&camera, position, up, CAMERA_YAW, CAMERA_PITCH);
 
-	// todo: resource manager for shaders and textures maybe sounds
-	// shader
+	// todo: resource manager for shaders and textures
+	//
+	char* vert_path = make_path("res/shaders/shader.vert");
+	char* frag_path = make_path("res/shaders/shader.frag");
+
+	path_make_absolute(vert_path, "res/shaders/shader.vert");
+	path_make_absolute(frag_path, "res/shaders/shader.frag");
+
 	Shader myShader = shader_create(
-   		get_absolute_path("res/shaders/shader.vert"),
-    	get_absolute_path("res/shaders/shader.frag")
+		vert_path,
+   	    frag_path
 	);
 	shader_use(&myShader);
 
+	free(vert_path);
+	free(frag_path);
+
 	// texture atlas
-	Texture atlas = texture_create(get_absolute_path("res/atlas.png"), GL_TEXTURE_2D);
+	char* texture_path = make_path("res/atlas.png");
+	path_make_absolute(texture_path, "res/atlas.png");
+	Texture atlas = texture_create(texture_path, GL_TEXTURE_2D);
 	texture_bind(&atlas, 0);
+
+	free(texture_path);
 
 	shader_set_int(&myShader, "blockTexture", 0);
 
@@ -122,8 +136,8 @@ int main() {
 	world_rebuild(&world);
 	
 	glEnable(GL_DEPTH_TEST);
-	// glEnable(GL_CULL_FACE);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_CULL_FACE);
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	
 	RenderContext ctx;
 	while(!glfwWindowShouldClose(window)) {
