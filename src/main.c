@@ -24,8 +24,8 @@ vec3 up       = {0.0f, 1.0f, 0.0f};
 #define fov_y (60.0f * (M_PI / 180.0f))
 //float fov_y = glm_rad(45.0f);
 
-float z_near = 0.0f;
-float z_far = 100.0f;
+float near_plane = 0.1f; // z near
+float far_plane = 1000.0f; // z far
 
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
@@ -154,7 +154,8 @@ int main() {
 		glm_perspective(
 			glm_rad(camera.zoom),
             (float)SCR_WIDTH / SCR_HEIGHT,
-            0.1f, 100.0f, projection
+            near_plane,
+			far_plane, projection
 		);
 		// shader_set_mat4(&myShader, "projection", projection);
 		memcpy(ctx.projection, projection, sizeof(mat4));
@@ -164,7 +165,7 @@ int main() {
 		// shader_set_mat4(&myShader, "view", view);
 		memcpy(ctx.view, view, sizeof(mat4));
 
-		Frustum frustum = create_frustum_from_camera(&camera, (float)SCR_WIDTH / (float)SCR_HEIGHT, fov_y, z_near, z_far);
+		Frustum frustum = create_frustum_from_camera(&camera, (float)SCR_WIDTH / (float)SCR_HEIGHT, fov_y, near_plane, far_plane);
 		ctx.frustum = frustum;	
 
 		world_draw(&ctx, &world, &myShader);

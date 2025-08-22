@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type) {
+void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
 	const float tile_width = 1.0f / 3.0f;
     const float tile_height = 1.0f / 2.0f;
 
@@ -69,17 +69,57 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type) {
     chunk->indices[chunk->index_count++] = base;
 }
 
+int chunk_get_block_index(int x, int y, int z) {
+    if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= CHUNK_SIZE || z < 0 || z >= CHUNK_SIZE) {
+        return -1;
+    }
+    return x * CHUNK_SIZE * CHUNK_SIZE + y * CHUNK_SIZE + z;
+}
+
+Block chunk_get_block(Chunk* chunk, int x, int y, int z) {
+	if (x < 0 || x >= CHUNK_SIZE ||
+		y < 0 || y >= CHUNK_SIZE ||
+		z < 0 || z >= CHUNK_SIZE) {
+		return BLOCK_AIR;
+	}
+
+	return chunk->blocks[chunk_get_block_index(x, y, z)];
+}
+
+void chunk_set_block(Chunk* chunk, int x, int y, int z, Block block) {
+	if (x < 0 || x >= CHUNK_SIZE ||
+        y < 0 || y >= CHUNK_SIZE ||
+        z < 0 || z >= CHUNK_SIZE) {
+        return;
+    }
+
+    chunk->blocks[chunk_get_block_index(x, y, z)] = block;
+}
+
 void chunk_init(Chunk* chunk) {
-	memset(chunk->blocks, BLOCK_AIR, sizeof(chunk->blocks));
-	for(int x = 0; x < CHUNK_SIZE; x++) {
-		chunk->blocks[x][0][0] = BLOCK_DIRT;
-	}
-	for(int y = 0; y < CHUNK_SIZE; y++) {
-		chunk->blocks[0][y][0] = BLOCK_GRASS;
-	}
-	for(int z = 0; z < CHUNK_SIZE; z++) {
-		chunk->blocks[0][0][z] = BLOCK_STONE;
-	}
+	chunk->blocks = malloc(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
+	memset(chunk->blocks, BLOCK_AIR, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
+
+    /*
+	 for (int x = 0; x < CHUNK_SIZE; x++) {
+        for (int z = 0; z < CHUNK_SIZE; z++) {
+            for (int y = 0; y < CHUNK_SIZE; y++) {
+                Block block = BLOCK_AIR;
+
+                if (y < CHUNK_SIZE / 4) {
+                    block = BLOCK_STONE;
+                } else if (y < CHUNK_SIZE / 4 + 3) {
+                    block = BLOCK_DIRT;
+                } else if (y == CHUNK_SIZE / 4 + 3) {
+                    block = BLOCK_GRASS;
+                }
+
+                chunk->blocks[chunk_get_block_index(x, y, z)] = block;
+            }
+        }
+    }*/
+	// chunk->blocks[chunk_get_block_index(0, 0, 0)] = BLOCK_GRASS;
+	chunk_set_block(chunk, 0, 0, 0, BLOCK_GRASS);
 
 	chunk->vertices = NULL;
 	chunk->indices = NULL;
@@ -90,9 +130,13 @@ void chunk_init(Chunk* chunk) {
 	glGenVertexArrays(1, &chunk->vao);
     glGenBuffers(1, &chunk->vbo);
 	glGenBuffers(1, &chunk->ebo);
+
+	chunk->dirty = true;
+	chunk->visible = false;
 }
 
 void chunk_unload(Chunk* chunk) {
+	free(chunk->blocks);
     if (chunk->vao) glDeleteVertexArrays(1, &chunk->vao);
     if (chunk->vbo) glDeleteBuffers(1, &chunk->vbo);
     if (chunk->ebo) glDeleteBuffers(1, &chunk->ebo);
@@ -112,63 +156,62 @@ void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {
 
 	Chunk* neighbors[DIR_COUNT];
 	for (Direction d = 0; d < DIR_COUNT; ++d) {
-		// neighbors[d] = NULL;//chunk_get_neighbor(world, chunk, d);
 		neighbors[d] = chunk_get_neighbor(world, cx, cy, cz, d);
 	}
 
 	for (int x = 0; x < CHUNK_SIZE; ++x) {
    		for (int y = 0; y < CHUNK_SIZE; ++y) {
         	for (int z = 0; z < CHUNK_SIZE; ++z) {
-            	BlockType bt = chunk->blocks[x][y][z];
+				Block bt = chunk->blocks[chunk_get_block_index(x, y, z)];
             	if (bt == BLOCK_AIR) continue;
 
             	vec3 posf = { (float)x, (float)y, (float)z };
 				
 				// +X
            		if (x == CHUNK_SIZE - 1) {
-                	BlockType nb = neighbors[DIR_POS_X] ? neighbors[DIR_POS_X]->blocks[0][y][z] : BLOCK_AIR;
+                	Block nb = neighbors[DIR_POS_X] ? neighbors[DIR_POS_X]->blocks[chunk_get_block_index(0, y, z)] : BLOCK_AIR;
                 	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_POS_X, bt);
-            	} else if (chunk->blocks[x+1][y][z] == BLOCK_AIR) {
+            	} else if (chunk->blocks[chunk_get_block_index(x+1, y, z)] == BLOCK_AIR) {
                 	add_face(chunk, posf, DIR_POS_X, bt);
             	}
 
             	// -X
             	if (x == 0) {
-                	BlockType nb = neighbors[DIR_NEG_X] ? neighbors[DIR_NEG_X]->blocks[CHUNK_SIZE-1][y][z] : BLOCK_AIR;
+                	Block nb = neighbors[DIR_NEG_X] ? neighbors[DIR_NEG_X]->blocks[chunk_get_block_index(CHUNK_SIZE-1, y, z)] : BLOCK_AIR;
                 	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_NEG_X, bt);
-            	} else if (chunk->blocks[x-1][y][z] == BLOCK_AIR) {
+            	} else if (chunk->blocks[chunk_get_block_index(x-1, y, z)] == BLOCK_AIR) {
                 	add_face(chunk, posf, DIR_NEG_X, bt);
             	}
 
             	// +Y
             	if (y == CHUNK_SIZE - 1) {
-                	BlockType nb = neighbors[DIR_POS_Y] ? neighbors[DIR_POS_Y]->blocks[x][0][z] : BLOCK_AIR;
+                	Block nb = neighbors[DIR_POS_Y] ? neighbors[DIR_POS_Y]->blocks[chunk_get_block_index(x, 0, z)] : BLOCK_AIR;
                 	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_POS_Y, bt);
-            	} else if (chunk->blocks[x][y+1][z] == BLOCK_AIR) {
+            	} else if (chunk->blocks[chunk_get_block_index(x, y+1, z)] == BLOCK_AIR) {
                 	add_face(chunk, posf, DIR_POS_Y, bt);
             	}
 
             	// -Y
             	if (y == 0) {
-                	BlockType nb = neighbors[DIR_NEG_Y] ? neighbors[DIR_NEG_Y]->blocks[x][CHUNK_SIZE-1][z] : BLOCK_AIR;
+                	Block nb = neighbors[DIR_NEG_Y] ? neighbors[DIR_NEG_Y]->blocks[chunk_get_block_index(x, CHUNK_SIZE-1, z)] : BLOCK_AIR;
                 	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_NEG_Y, bt);
-            	} else if (chunk->blocks[x][y-1][z] == BLOCK_AIR) {
+            	} else if (chunk->blocks[chunk_get_block_index(x, y-1, z)] == BLOCK_AIR) {
                 	add_face(chunk, posf, DIR_NEG_Y, bt);
             	}
 
             	// +Z
             	if (z == CHUNK_SIZE - 1) {
-                	BlockType nb = neighbors[DIR_POS_Z] ? neighbors[DIR_POS_Z]->blocks[x][y][0] : BLOCK_AIR;
+                	Block nb = neighbors[DIR_POS_Z] ? neighbors[DIR_POS_Z]->blocks[chunk_get_block_index(x, y, 0)] : BLOCK_AIR;
                 	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_POS_Z, bt);
-            	} else if (chunk->blocks[x][y][z+1] == BLOCK_AIR) {
+            	} else if (chunk->blocks[chunk_get_block_index(x, y, z+1)] == BLOCK_AIR) {
                 	add_face(chunk, posf, DIR_POS_Z, bt);
             	}
 
             	// -Z
             	if (z == 0) {
-                	BlockType nb = neighbors[DIR_NEG_Z] ? neighbors[DIR_NEG_Z]->blocks[x][y][CHUNK_SIZE-1] : BLOCK_AIR;
+                	Block nb = neighbors[DIR_NEG_Z] ? neighbors[DIR_NEG_Z]->blocks[chunk_get_block_index(x, y, CHUNK_SIZE-1)] : BLOCK_AIR;
                 	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_NEG_Z, bt);
-            	} else if (chunk->blocks[x][y][z-1] == BLOCK_AIR) {
+            	} else if (chunk->blocks[chunk_get_block_index(x, y, z-1)] == BLOCK_AIR) {
                 	add_face(chunk, posf, DIR_NEG_Z, bt);
             	}
         	}
@@ -189,6 +232,8 @@ void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * chunk->index_count, chunk->indices, GL_STATIC_DRAW);
 
     glBindVertexArray(0);
+
+	chunk->dirty = false;
 }
 
 void chunk_draw(const Chunk* chunk, Shader* shader) {

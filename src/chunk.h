@@ -26,7 +26,7 @@ typedef enum {
 	BLOCK_DIRT,
     BLOCK_GRASS,
 	BLOCK_STONE
-} BlockType;
+} Block;
 
 typedef struct {
 	vec3 position;
@@ -34,7 +34,8 @@ typedef struct {
 } Vertex;
 
 typedef struct {
-    BlockType blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+    // BlockType blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+	Block* blocks;
 
 	Vertex* vertices;
 	unsigned int* indices;
@@ -45,15 +46,17 @@ typedef struct {
 	GLuint vbo;
 	GLuint ebo;
 
-	bool is_dirty;
+	bool dirty;
 	bool visible;
 } Chunk;
+
+int chunk_get_block_index(int x, int y, int z);
+Block chunk_get_block(Chunk* chunk, int x, int y, int z);
+void chunk_set_block(Chunk* chunk, int x, int y, int z, Block block);
 
 void chunk_init(Chunk* chunk);
 void chunk_unload(Chunk* chunk);
 void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz);
 void chunk_draw(const Chunk* chunk, Shader* shader);
-
-// chunk_set_block(Chunk* chunk, vec3 pos, BlockType block_type);
 
 #endif
