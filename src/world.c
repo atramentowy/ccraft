@@ -78,21 +78,40 @@ void world_generate(World* world) {
 	int p[512];
 	init_perlin(p);
 
+	const int MAX_HEIGHT = 50;
+
 	for (int x = 0; x < WORLD_SIZE_X * CHUNK_SIZE; x++) {
         for (int y = 0; y < WORLD_SIZE_Y * CHUNK_SIZE; y++) {
             for (int z = 0; z < WORLD_SIZE_Z * CHUNK_SIZE; z++) {
-				float nx = x * 0.1f;
-    			float ny = y * 0.1f;
-   				float nz = z * 0.1f;
+                
+                float nx = x * 0.01f;
+                float nz = z * 0.01f;
+                float height = fbm(nx, 0.0f, nz, p, 6);
+                int terrain_height = (int)((height + 1.0f) * 0.5f * MAX_HEIGHT);
 
-    			float noise = perlin_noise_3d(nx, ny, nz, p);
-    			float density = (noise + 1.0f) * 0.5f; // Normalize to [0, 1]
+                int block;
 
-    			int block = (density > 0.5f) ? 2 : 0;
-				world_set_block(world, x, y, z, block);
-			}
-		}
-	}
+                if (y < terrain_height - 3) {
+                    block = BLOCK_STONE;
+                } else if (y < terrain_height) {
+                    block = BLOCK_DIRT;
+                } else if (y == terrain_height) {
+                    block = BLOCK_GRASS;
+                } else {
+                    block = BLOCK_AIR;
+                }
+
+                float cave_density = perlin_noise_3d(x * 0.1f, y * 0.1f, z * 0.1f, p);
+                float cave_value = (cave_density + 1.0f) * 0.5f;
+
+                if (cave_value > 0.6f && y < terrain_height) {
+                    block = BLOCK_AIR;
+                }
+
+                world_set_block(world, x, y, z, block);
+            }
+        }
+    }
 }
 
 void world_rebuild(World* world) {

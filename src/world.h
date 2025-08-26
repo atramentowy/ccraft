@@ -5,11 +5,14 @@
 #include "render_context.h"
 
 #define WORLD_SIZE_X 10
-#define WORLD_SIZE_Y 10
+#define WORLD_SIZE_Y 5
 #define WORLD_SIZE_Z 10
+
+#define MAX_ENTITIES 2
 
 typedef struct World {
 	Chunk chunks[WORLD_SIZE_X][WORLD_SIZE_Y][WORLD_SIZE_Z];
+	// Entity entities[MAX_ENTITIES];
 } World;
 
 Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir);

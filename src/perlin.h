@@ -80,4 +80,20 @@ float perlin_noise_3d(float x, float y, float z, int* p) {
         w);
 }
 
+float fbm(float x, float y, float z, int* p, int octaves) {
+    float total = 0.0f;
+    float frequency = 1.0f;
+    float amplitude = 1.0f;
+    float max_value = 0.0f;
+
+    for (int i = 0; i < octaves; i++) {
+        total += perlin_noise_3d(x * frequency, y * frequency, z * frequency, p) * amplitude;
+        max_value += amplitude;
+        amplitude *= 0.5f;
+        frequency *= 2.0f;
+    }
+
+    return total / max_value; // Normalize to [-1, 1]
+}
+
 #endif // PERLIN_H

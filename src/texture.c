@@ -10,11 +10,15 @@ static void texture_load(Texture* texture) {
     glGenTextures(1, &texture->ID);
     glBindTexture(texture->texture_type, texture->ID);
 
-    // Texture parameters
-	glTexParameteri(texture->texture_type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(texture->texture_type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(texture->texture_type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(texture->texture_type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 
     int width, height, nr_channels;
     stbi_set_flip_vertically_on_load(1);

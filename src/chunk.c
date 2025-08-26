@@ -8,17 +8,29 @@
 #include <stdbool.h>
 
 void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
-	const float tile_width = 1.0f / 3.0f;
+	const float tile_width = 1.0f / 4.0f;
     const float tile_height = 1.0f / 2.0f;
+	
+	const float epsilon = 0.001f;
+    vec2 base_uv = { 
+		tile_width * (block_type % 4) + epsilon,
+		tile_height * (block_type / 2) + epsilon
+	};
 
-    vec2 base_uv = { tile_width * (block_type % 3), tile_height * (block_type / 3) };
-
+	/*
     vec2 uv_offsets[4] = {
         {0.0f, 0.0f},
         {tile_width, 0.0f},
         {tile_width, tile_height},
         {0.0f, tile_height}
     };
+	*/
+	vec2 uv_offsets[4] = {
+    	{0.0f, 0.0f},
+    	{tile_width - 2 * epsilon, 0.0f},
+    	{tile_width - 2 * epsilon, tile_height - 2 * epsilon},
+    	{0.0f, tile_height - 2 * epsilon}
+	};
 
     vec3 face_offsets[6][4] = {
         // +X

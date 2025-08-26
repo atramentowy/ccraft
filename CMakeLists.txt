@@ -29,6 +29,9 @@ add_executable(
 	src/texture.c
     src/chunk.c
     src/world.c
+	src/player.c
+	src/input.c
+	src/game.c
     src/main.c
 )
 
