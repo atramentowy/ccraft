@@ -1,3 +1,3 @@
 # ccraft
-simple minecraft clone written in c
+A simple Minecraft clone written in C
 

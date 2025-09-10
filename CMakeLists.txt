@@ -22,17 +22,12 @@ include_directories(${CMAKE_SOURCE_DIR}/libs/stb_image)
 # Find OpenGL
 find_package(OpenGL REQUIRED)
 
-# Executable
+# Collect source files
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.c)
+
 add_executable(
     ${PROJECT_NAME}
-    src/shader.c
-	src/texture.c
-    src/chunk.c
-    src/world.c
-	src/player.c
-	src/input.c
-	src/game.c
-    src/main.c
+    ${SOURCES}
 )
 
 # Link libraries

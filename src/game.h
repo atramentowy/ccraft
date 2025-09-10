@@ -1,6 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "player.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
@@ -8,9 +10,9 @@
 #include "shader.h"
 #include "render_context.h"
 #include "world.h"
-#include "player.h"
+#include "input.h"
 
-typedef struct {
+typedef struct Game {
 	GLFWwindow* window;
 	float window_width;
 	float window_height;
@@ -24,6 +26,7 @@ typedef struct {
 					  
 	Shader shader; // block shader
 
+	Input input;
 	RenderContext ctx;
 	World world;
 	Player player;

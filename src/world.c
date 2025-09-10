@@ -40,17 +40,43 @@ Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
     return &world->chunks[nx][ny][nz];
 }
 
-void world_set_block(World* world, int x, int y, int z, Block block) {
-	int chunk_x = floor(x / CHUNK_SIZE);
-	int chunk_y = floor(y / CHUNK_SIZE);
-	int chunk_z = floor(z / CHUNK_SIZE);
+Block world_get_block(World* world, int x, int y, int z) {
+	// Check if the coordinates are inside the world
+    if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
+        y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
+        z < 0 || z >= CHUNK_SIZE * WORLD_SIZE_Z) {
+        return BLOCK_AIR;
+    }
+	int chunk_x = x / CHUNK_SIZE;
+	int chunk_y = y / CHUNK_SIZE;
+	int chunk_z = z / CHUNK_SIZE;
 
 	int block_x = x % CHUNK_SIZE;
 	int block_y = y % CHUNK_SIZE;
 	int block_z = z % CHUNK_SIZE;
+	
+	Chunk* chunk = &world->chunks[chunk_x][chunk_y][chunk_z];
+	return chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)];
+}
 
-	world->chunks[chunk_x][chunk_y][chunk_z].blocks[chunk_get_block_index(
-			block_x, block_y, block_z)] = block;
+void world_set_block(World* world, int x, int y, int z, Block block) {
+    // Check if the coordinates are inside the world
+    if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
+        y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
+        z < 0 || z >= CHUNK_SIZE * WORLD_SIZE_Z) {
+        return;
+    }
+
+    int chunk_x = x / CHUNK_SIZE;
+    int chunk_y = y / CHUNK_SIZE;
+    int chunk_z = z / CHUNK_SIZE;
+
+    int block_x = x % CHUNK_SIZE;
+    int block_y = y % CHUNK_SIZE;
+    int block_z = z % CHUNK_SIZE;
+
+    Chunk* chunk = &world->chunks[chunk_x][chunk_y][chunk_z];
+    chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)] = block;
 }
 
 void world_init(World* world) {

@@ -18,7 +18,7 @@ typedef enum {
 #define CAMERA_PITCH        0.0f
 #define CAMERA_SPEED        2.5f
 #define CAMERA_SENSITIVITY  0.1f
-#define CAMERA_ZOOM         45.0f
+#define CAMERA_ZOOM         60.0f
 
 typedef struct {
     vec3 position;
@@ -33,6 +33,10 @@ typedef struct {
     float movement_speed;
     float mouse_sensitivity;
     float zoom;
+
+	float fov_rad;
+	float near_plane;
+	float far_plane;
 } Camera;
 
 // Internal helper to update camera vectors
@@ -61,6 +65,10 @@ static inline void camera_init(Camera *cam, vec3 position, vec3 up, float yaw, f
     cam->zoom = CAMERA_ZOOM;
     glm_vec3_copy((vec3){0.0f, 0.0f, -1.0f}, cam->front);
     update_camera_vectors(cam);
+
+	cam->fov_rad = 60.0f * (M_PI / 180.0f);
+	cam->near_plane = 0.1f;
+	cam->far_plane = 1000.0f;
 }
 
 // Get view matrix from camera

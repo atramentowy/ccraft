@@ -241,7 +241,7 @@ void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, chunk->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * chunk->index_count, chunk->indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * chunk->index_count, chunk->indices, GL_DYNAMIC_DRAW);
 
     glBindVertexArray(0);
 
