@@ -21,7 +21,7 @@ typedef enum {
 	DIR_COUNT = 6	// COUNT
 } Direction;
 
-typedef enum {
+typedef enum Block {
     BLOCK_AIR = 0,
 	BLOCK_DIRT,
     BLOCK_GRASS,
@@ -33,7 +33,7 @@ typedef struct {
 	vec2 uv;
 } Vertex;
 
-typedef struct {
+typedef struct Chunk {
     // BlockType blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 	Block* blocks;
 

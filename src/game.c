@@ -2,7 +2,7 @@
 
 #include "filepath.h"
 #include "texture.h"
-#include "frustum.h"
+// #include "frustum.h"
 
 /*
 int raycast(World* world, float ox, float oy, float oz, float dx, float dy, float dz,
@@ -40,52 +40,7 @@ int raycast(World* world, float ox, float oy, float oz, float dx, float dy, floa
 }
 */
 
-void game_process_input(Game* game) {
-	if (glfwGetKey(game->window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(game->window, true);
 
-    if (glfwGetKey(game->window, GLFW_KEY_W) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_FORWARD,  game->delta_time);
-    if (glfwGetKey(game->window, GLFW_KEY_S) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_BACKWARD, game->delta_time);
-    if (glfwGetKey(game->window, GLFW_KEY_A) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_LEFT,     game->delta_time);
-    if (glfwGetKey(game->window, GLFW_KEY_D) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_RIGHT,    game->delta_time);
-	
-	if (mouse_just_pressed(&game->input, GLFW_MOUSE_BUTTON_RIGHT)) {		
-		vec3 origin;
-		glm_vec3_copy(game->player.camera.position, origin);
-
-		int x = (int)roundf(origin[0]);
-		int y = (int)roundf(origin[1]);
-		int z = (int)roundf(origin[2]);
-		
-		// also check if block is not already there
-		if (world_get_block(&game->world, x, y, z) != BLOCK_GRASS) {
-			world_set_block(&game->world, x, y, z, BLOCK_GRASS);
-			world_rebuild(&game->world);
-		}
-
-		// printf("Placing at (%d, %d, %d)\n", x, y, z);
-		// printf("Current block: %d\n", world_get_block(world, x, y, z));
-    } 
-	else if (mouse_just_pressed(&game->input, GLFW_MOUSE_BUTTON_LEFT)) {
-		vec3 origin;
-		glm_vec3_copy(game->player.camera.position, origin);
-
-		int x = (int)roundf(origin[0]);
-		int y = (int)roundf(origin[1]);
-		int z = (int)roundf(origin[2]);
-
-		if (world_get_block(&game->world, x, y, z) != BLOCK_AIR) {
-			world_set_block(&game->world, x, y, z, BLOCK_AIR);
-			world_rebuild(&game->world);
-		}
-		// printf("Placing at (%d, %d, %d)\n", x, y, z);
-		// printf("Current block: %d\n", world_get_block(world, x, y, z));
-	}
-}
 
 int game_init(Game* game) {
 	game->window_width = 800;
@@ -123,8 +78,9 @@ int game_init(Game* game) {
 	glfwSetWindowUserPointer(game->window, game);
 	glfwSetErrorCallback(error_callback);
 	glfwSetCursorPosCallback(game->window, mouse_callback);
-	// glfwSetMouseButtonCallback(window, mouse_button_callback);	
+	glfwSetMouseButtonCallback(game->window, mouse_button_callback);	
     glfwSetScrollCallback(game->window, scroll_callback);
+	glfwSetKeyCallback(game->window, key_callback);
 	// change mouse cursor visibility
 	glfwSetInputMode(game->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -159,7 +115,6 @@ int game_init(Game* game) {
 
 	shader_set_int(&myShader, "blockTexture", 0);
 	
-	input_init(&game->input, game->window);
 	world_init(&game->world);
 	world_rebuild(&game->world);
 	player_init(&game->player);
@@ -172,41 +127,14 @@ void game_run(Game* game) {
 		game->delta_time = now - game->last_frame;
 		game->last_frame = now;
 
-		input_update(&game->input);
 		glfwPollEvents();
-		// process_input(game->window);
-		// input_update(&game->input);
-		game_process_input(game);
+		process_input(game->window);
 
 		glClearColor(0.5098f, 0.7843f, 0.8980f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		mat4 projection;
-		glm_perspective(
-			glm_rad(game->player.camera.zoom),
-            aspect,
-            game->player.camera.near_plane,
-			game->player.camera.far_plane, projection
-		);
-		// shader_set_mat4(&myShader, "projection", projection);
-		memcpy(game->ctx.projection, projection, sizeof(mat4));
-
-		mat4 view;
-		camera_get_view_matrix(&game->player.camera, view);
-		// shader_set_mat4(&myShader, "view", view);
-		memcpy(game->ctx.view, view, sizeof(mat4));
-		
-		Frustum frustum = create_frustum_from_camera(
-				&game->player.camera, 
-				aspect, 
-				game->player.camera.fov_rad, 
-				game->player.camera.near_plane, 
-				game->player.camera.far_plane
-		);
-		game->ctx.frustum = frustum;
-
-		// player_update(&player);
 		shader_use(&game->shader);
+		player_update(&game->player, game);
 		world_draw(&game->ctx, &game->world, &game->shader);
 
 		glfwSwapBuffers(game->window);
@@ -215,7 +143,6 @@ void game_run(Game* game) {
 
 void game_close(Game* game) {
 	// player_unload(&game->player);
-	input_unload(&game->input);
 	world_unload(&game->world);
 
 	glfwDestroyWindow(game->window);

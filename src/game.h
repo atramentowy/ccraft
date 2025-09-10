@@ -26,7 +26,6 @@ typedef struct Game {
 					  
 	Shader shader; // block shader
 
-	Input input;
 	RenderContext ctx;
 	World world;
 	Player player;
