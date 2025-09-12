@@ -2,53 +2,18 @@
 
 #include "filepath.h"
 #include "texture.h"
-// #include "frustum.h"
-
-/*
-int raycast(World* world, float ox, float oy, float oz, float dx, float dy, float dz,
-            int* out_x, int* out_y, int* out_z, float max_distance) {
-    const float step = 0.05f;
-
-    for (float t = 0.0f; t < max_distance; t += step) {
-        int x = (int)floorf(ox + dx * t);
-        int y = (int)floorf(oy + dy * t);
-        int z = (int)floorf(oz + dz * t);
-
-        if (x < 0 || x >= WORLD_SIZE_X ||
-            y < 0 || y >= WORLD_SIZE_Y ||
-            z < 0 || z >= WORLD_SIZE_Z)
-            continue;
-
-        if (world_get_block(world, x, y, z) != BLOCK_AIR) {
-            int px = x - (dx > 0 ? 1 : (dx < 0 ? -1 : 0));
-            int py = y - (dy > 0 ? 1 : (dy < 0 ? -1 : 0));
-            int pz = z - (dz > 0 ? 1 : (dz < 0 ? -1 : 0));
-
-            if (px >= 0 && px < WORLD_SIZE_X &&
-                py >= 0 && py < WORLD_SIZE_Y &&
-                pz >= 0 && pz < WORLD_SIZE_Z) {
-                *out_x = px;
-                *out_y = py;
-                *out_z = pz;
-                return 1;
-            } else {
-                return 0; // Hit block, but can't place
-            }
-        }
-    }
-    return 0;
-}
-*/
-
-
+#include "cube.h"
 
 int game_init(Game* game) {
 	game->window_width = 800;
 	game->window_height = 600;
-	// input
+	game->last_time = (float)glfwGetTime();
 	game->last_x = game->window_width / 2.0f;
 	game->last_y = game->window_height / 2.0f;
 	game->first_mouse = true;
+	
+	// physics
+	game->accumulator = 0.0f;
 
 	// init glfw
 	if(!glfwInit()) {
@@ -59,7 +24,7 @@ int game_init(Game* game) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_SAMPLES, 4); // msaa
 
 	game->window = glfwCreateWindow(game->window_width, game->window_height, "ccraft", NULL, NULL);
 	if(!game->window) {
@@ -85,14 +50,13 @@ int game_init(Game* game) {
 	glfwSetInputMode(game->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	// glEnable(GL_CULL_FACE);
 	
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// shaders
     char* vert_path = make_path("res/shaders/shader.vert");
 	char* frag_path = make_path("res/shaders/shader.frag");
-
 	path_make_absolute(vert_path, "res/shaders/shader.vert");
 	path_make_absolute(frag_path, "res/shaders/shader.frag");
 
@@ -112,30 +76,62 @@ int game_init(Game* game) {
 	Texture atlas = texture_create(texture_path, GL_TEXTURE_2D);
 	texture_bind(&atlas, 0);
 	free(texture_path);
-
 	shader_set_int(&myShader, "blockTexture", 0);
 	
 	world_init(&game->world);
 	world_rebuild(&game->world);
 	player_init(&game->player);
+
+	// test entity
+	vec3 ent_pos = {2.0f, 12.0f, 2.0f};
+	entity_init(&game->entity, ent_pos, 1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void game_run(Game* game) {
+	setup_cube_mesh();
 	while(!glfwWindowShouldClose(game->window)) {
-		float aspect = (float)game->window_width / (float)game->window_height;
-		float now = (float)glfwGetTime();
-		game->delta_time = now - game->last_frame;
-		game->last_frame = now;
+		game->aspect = (float)game->window_width / (float)game->window_height;
+		
+	    float current_time = (float)glfwGetTime();
+    	game->delta_time = current_time - game->last_time;
+    	game->last_time = current_time;
+		game->accumulator += game->delta_time;
+		game->alpha = game->accumulator / PHYSICS_TIMESTEP;
+		if (game->alpha > 1.0f) game->alpha = 1.0f;
 
+		// input
 		glfwPollEvents();
 		process_input(game->window);
 
+		// process physics
+		while (game->accumulator >= PHYSICS_TIMESTEP) {
+			entity_update(&game->world, &game->entity, PHYSICS_TIMESTEP);
+			entity_update(&game->world, &game->player.entity, PHYSICS_TIMESTEP);
+			game->accumulator -= PHYSICS_TIMESTEP;
+		}
+
+		// draw
 		glClearColor(0.5098f, 0.7843f, 0.8980f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		shader_use(&game->shader);
 		player_update(&game->player, game);
 		world_draw(&game->ctx, &game->world, &game->shader);
+
+		// set model matrix
+		mat4 model;
+		glm_mat4_identity(model);
+		vec3 translation = {
+			game->entity.position[0],
+			game->entity.position[1],
+			game->entity.position[2]
+		};
+		glm_translate(model, translation);
+		shader_set_mat4(&game->shader, "model", model);
+
+		// draw test cube
+		draw_cube_mesh();
+		// printf("Y Pos: %.2f | Y Vel: %.2f | is_on_ground: %d\n", game->entity.position[1], game->entity.velocity[1], game->entity.is_on_ground);
 
 		glfwSwapBuffers(game->window);
 	}

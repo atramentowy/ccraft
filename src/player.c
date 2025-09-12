@@ -1,21 +1,23 @@
 #include "player.h"
 #include "game.h"
 
-void player_init(Player* player) {	
-	vec3 position = {0.0f, 0.0f, 0.0f};
+void player_init(Player* player) {
+	vec3 collision_box = {0.5f, 2.0f, 0.5f};
+	vec3 spawn_position = {2.0f, 3.0f, 6.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	camera_init(&player->camera, position, up, CAMERA_YAW, CAMERA_PITCH);
+
+	entity_init(&player->entity, spawn_position, 1.0f, collision_box[0], collision_box[1], collision_box[2]);
+	camera_init(&player->camera, spawn_position, up, CAMERA_YAW, CAMERA_PITCH);
 
 	player->selected_block = BLOCK_GRASS;
+	glm_vec3_copy(player->entity.position, player->entity.prev_position);
 }
 
 void player_update(Player* player, Game* game) {
-	float aspect = (float)game->window_width / (float)game->window_height;
-
 	mat4 projection;
 	glm_perspective(
 		glm_rad(game->player.camera.zoom),
-        aspect,
+        game->aspect,
         game->player.camera.near_plane,
 		game->player.camera.far_plane, projection
 	);
@@ -29,12 +31,20 @@ void player_update(Player* player, Game* game) {
 		
 	Frustum frustum = create_frustum_from_camera(
 		&game->player.camera, 
-		aspect, 
-		game->player.camera.fov_rad, 
-		game->player.camera.near_plane, 
-		game->player.camera.far_plane
+		game->aspect, 
+		player->camera.fov_rad, 
+		player->camera.near_plane, 
+		player->camera.far_plane
 	);
 	game->ctx.frustum = frustum;
+	
+	// update camera position interpolated
+	vec3 interpolated_pos;
+	glm_vec3_zero(interpolated_pos);
+	glm_vec3_lerp(player->entity.prev_position, player->entity.position, game->alpha, interpolated_pos);
+
+	glm_vec3_copy(interpolated_pos, player->camera.position);
+	glm_vec3_copy(player->entity.position, player->entity.prev_position);
 }
 
 void player_set_block(Game* game, Block block) {
@@ -60,3 +70,40 @@ void player_place_block(Game* game) {
 void player_destroy_block(Game* game) {
 	player_set_block(game, BLOCK_AIR);
 }
+
+/*
+int raycast(World* world, float ox, float oy, float oz, float dx, float dy, float dz,
+            int* out_x, int* out_y, int* out_z, float max_distance) {
+    const float step = 0.05f;
+
+    for (float t = 0.0f; t < max_distance; t += step) {
+        int x = (int)floorf(ox + dx * t);
+        int y = (int)floorf(oy + dy * t);
+        int z = (int)floorf(oz + dz * t);
+
+        if (x < 0 || x >= WORLD_SIZE_X ||
+            y < 0 || y >= WORLD_SIZE_Y ||
+            z < 0 || z >= WORLD_SIZE_Z)
+            continue;
+
+        if (world_get_block(world, x, y, z) != BLOCK_AIR) {
+            int px = x - (dx > 0 ? 1 : (dx < 0 ? -1 : 0));
+            int py = y - (dy > 0 ? 1 : (dy < 0 ? -1 : 0));
+            int pz = z - (dz > 0 ? 1 : (dz < 0 ? -1 : 0));
+
+            if (px >= 0 && px < WORLD_SIZE_X &&
+                py >= 0 && py < WORLD_SIZE_Y &&
+                pz >= 0 && pz < WORLD_SIZE_Z) {
+                *out_x = px;
+                *out_y = py;
+                *out_z = pz;
+                return 1;
+            } else {
+                return 0; // Hit block, but can't place
+            }
+        }
+    }
+    return 0;
+}
+*/
+

@@ -11,20 +11,25 @@
 #include "render_context.h"
 #include "world.h"
 #include "input.h"
+#include "entity.h"
 
 typedef struct Game {
 	GLFWwindow* window;
 	float window_width;
 	float window_height;
+	float aspect;
 
+	float last_time;
 	float delta_time;
-	float last_frame;
+	float accumulator;
+	float alpha;
 
 	float last_x;
 	float last_y;
 	bool first_mouse;
 					  
 	Shader shader; // block shader
+	Entity entity; // test entity
 
 	RenderContext ctx;
 	World world;

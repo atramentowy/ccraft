@@ -101,6 +101,15 @@ void world_unload(World* world) {
 }
 
 void world_generate(World* world) {
+	for (int x = 0; x < WORLD_SIZE_X * CHUNK_SIZE; x++) {
+        for (int y = 0; y < WORLD_SIZE_Y * CHUNK_SIZE; y++) {
+            for (int z = 0; z < WORLD_SIZE_Z * CHUNK_SIZE; z++) {
+				world_set_block(world, x, 0, z, BLOCK_GRASS);
+			}
+		}
+	}
+
+	/*
 	int p[512];
 	init_perlin(p);
 
@@ -138,6 +147,7 @@ void world_generate(World* world) {
             }
         }
     }
+	*/
 }
 
 void world_rebuild(World* world) {

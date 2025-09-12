@@ -4,6 +4,7 @@
 #include "camera.h"
 #include "frustum.h"
 #include "chunk.h"
+#include "entity.h"
 
 typedef struct Game Game;
 typedef struct Chunk Chunk;
@@ -12,11 +13,12 @@ typedef enum Block Block;
 typedef struct {
 	Camera camera;
 	Frustum frustum;
+	Entity entity;
 	Block selected_block;
 } Player;
 
 void player_init(Player* player);
-void player_update(Player* player, Game* game);
+void player_update(Player* player, Game* game); // view update not physics
 // void player_unload(Player* player);
 
 void player_place_block(Game* game);

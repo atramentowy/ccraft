@@ -1,26 +1,34 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include "world.h"
+
+#include <glad/glad.h>
 #include <cglm/cglm.h>
 #include <stdbool.h>
 
-typedef struct {
-	vec3 position;
-	vec3 velocity;
+#define GRAVITY -9.81f
+#define PHYSICS_TIMESTEP (1.0f / 60.0f)
 
-	bool is_grounded;
-	float width; // collision box
-	float height;
+typedef struct {
+	vec3 prev_position; // position in last frame
+    vec3 position;
+    vec3 velocity;
+    vec3 rotation;
+    float mass;
+    float width;
+    float height;
+    float depth;
+    bool is_on_ground;
 } Entity;
 
-void entity_init(Entity* entity, vec3 position, float width, float height) {
-	glm_vec3_copy(position, entity->position);
-	glm_vec3_zero(entity->velocity);
-	entity->is_grounded = false;
-	entity->width = width;
-	entity->height = height;
-}
+typedef struct {
+    vec3 min;
+    vec3 max;
+} AABB;
 
-// void entity_draw();
+void entity_init(Entity* entity, vec3 position, float mass, float width, float height, float depth);
+void entity_update(World* world, Entity* entity, float timestep);
 
 #endif // ENTITY_H
+
