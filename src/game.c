@@ -50,9 +50,9 @@ int game_init(Game* game) {
 	glfwSetInputMode(game->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glEnable(GL_DEPTH_TEST);
-	// glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// shaders
     char* vert_path = make_path("res/shaders/shader.vert");

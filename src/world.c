@@ -109,6 +109,12 @@ void world_generate(World* world) {
 		}
 	}
 
+	world_set_block(world, 0, 1, 0, BLOCK_GRASS);
+	world_set_block(world, 0, 2, 0, BLOCK_GRASS);
+
+	world_set_block(world, 6, 2, 6, BLOCK_GRASS);
+
+
 	/*
 	int p[512];
 	init_perlin(p);

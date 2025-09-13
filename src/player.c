@@ -1,13 +1,18 @@
 #include "player.h"
 #include "game.h"
 
+#define CAMERA_OFFSET 0.5f
+
 void player_init(Player* player) {
 	vec3 collision_box = {0.5f, 2.0f, 0.5f};
-	vec3 spawn_position = {2.0f, 3.0f, 6.0f};
+	vec3 spawn_position = {2.0f, 6.0f, 6.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
 
-	entity_init(&player->entity, spawn_position, 1.0f, collision_box[0], collision_box[1], collision_box[2]);
-	camera_init(&player->camera, spawn_position, up, CAMERA_YAW, CAMERA_PITCH);
+	entity_init(&player->entity, spawn_position, 10.0f, collision_box[0], collision_box[1], collision_box[2]);
+	vec3 camera_spawn_position;
+	glm_vec3_copy(spawn_position, camera_spawn_position);
+	camera_spawn_position[1] += CAMERA_OFFSET;
+	camera_init(&player->camera, camera_spawn_position, up, CAMERA_YAW, CAMERA_PITCH);
 
 	player->selected_block = BLOCK_GRASS;
 	glm_vec3_copy(player->entity.position, player->entity.prev_position);
@@ -37,13 +42,12 @@ void player_update(Player* player, Game* game) {
 		player->camera.far_plane
 	);
 	game->ctx.frustum = frustum;
-	
-	// update camera position interpolated
-	vec3 interpolated_pos;
-	glm_vec3_zero(interpolated_pos);
-	glm_vec3_lerp(player->entity.prev_position, player->entity.position, game->alpha, interpolated_pos);
 
-	glm_vec3_copy(interpolated_pos, player->camera.position);
+	// Update camera position directly from player
+	glm_vec3_copy(player->entity.position, player->camera.position);
+	player->camera.position[1] += CAMERA_OFFSET;
+
+	// Update previous position for next frame
 	glm_vec3_copy(player->entity.position, player->entity.prev_position);
 }
 

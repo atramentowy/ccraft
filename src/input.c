@@ -1,6 +1,7 @@
 #include "input.h"
 #include <stdio.h>
 #include "game.h"
+#include "entity.h"
 #include "player.h"
 
 void error_callback(int error, const char* description) {
@@ -74,14 +75,41 @@ void process_input(GLFWwindow* window) {
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(game->window, true);
+	
+	// player movement
+    vec3 move_dir;
+    glm_vec3_zero(move_dir);
+
+    vec3 forward, right;
+    glm_vec3_copy(game->player.camera.front, forward);
+    glm_vec3_copy(game->player.camera.right, right);
+    forward[1] = 0.0f;
+    right[1] = 0.0f;
+    glm_normalize(forward);
+    glm_normalize(right);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_FORWARD,  game->delta_time);
+        glm_vec3_add(move_dir, forward, move_dir);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_BACKWARD, game->delta_time);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_LEFT,     game->delta_time);
+        glm_vec3_sub(move_dir, forward, move_dir);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera_process_keyboard(&game->player.camera, CAMERA_RIGHT,    game->delta_time);
+        glm_vec3_add(move_dir, right, move_dir);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        glm_vec3_sub(move_dir, right, move_dir);
+
+	float move_force = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) ? 8.0f : 5.0f;
+    if (!glm_vec3_eqv(move_dir, GLM_VEC3_ZERO)) {
+        glm_normalize(move_dir); // prevent diagonal speed boost
+        glm_vec3_scale(move_dir, move_force, move_dir); // scale by movement force
+        entity_apply_force(&game->player.entity, move_dir); // apply as force
+    }
+
+    // Clamp velocity to max speed
+    float max_speed = 10.0f;
+    float speed = glm_vec3_norm(game->player.entity.velocity);
+    if (speed > max_speed) {
+        glm_vec3_normalize(game->player.entity.velocity);
+        glm_vec3_scale(game->player.entity.velocity, max_speed, game->player.entity.velocity);
+    }
 }
 
