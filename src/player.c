@@ -67,47 +67,153 @@ void player_set_block(Game* game, Block block) {
 	// printf("Current block: %d\n", world_get_block(world, x, y, z));
 }
 
+bool raycast_voxels(World* world, vec3 origin, vec3 direction, float max_distance, 
+		Block* out_block, ivec3* out_coord, ivec3* out_normal) {
+	float LARGE = 1e30f; // A safe large number
+
+	// ray origin -> shift by 0.5 to match voxel-center-based coordinates
+	int x = (int)floorf(origin[0] + 0.5f);
+	int y = (int)floorf(origin[1] + 0.5f);
+	int z = (int)floorf(origin[2] + 0.5f);
+
+	// ray step direction
+	int step_x = (direction[0] > 0.0f) ? 1 : -1;
+	int step_y = (direction[1] > 0.0f) ? 1 : -1;
+	int step_z = (direction[2] > 0.0f) ? 1 : -1;
+
+	// position of voxel center
+	float voxel_x = (float)x;
+	float voxel_y = (float)y;
+	float voxel_z = (float)z;
+
+	// distance to next voxel face (aligned with block face boundaries)
+	float next_boundary_x = voxel_x + (step_x * 0.5f);
+	float next_boundary_y = voxel_y + (step_y * 0.5f);
+	float next_boundary_z = voxel_z + (step_z * 0.5f);
+
+	// t_max: distance to first boundary
+	float t_max_x = (direction[0] != 0.0f) ? (next_boundary_x - origin[0]) / direction[0] : LARGE;
+	float t_max_y = (direction[1] != 0.0f) ? (next_boundary_y - origin[1]) / direction[1] : LARGE;
+	float t_max_z = (direction[2] != 0.0f) ? (next_boundary_z - origin[2]) / direction[2] : LARGE;
+
+	// t_delta: distance to cross one voxel
+	float t_delta_x = (direction[0] != 0.0f) ? fabsf(1.0f / direction[0]) : LARGE;
+	float t_delta_y = (direction[1] != 0.0f) ? fabsf(1.0f / direction[1]) : LARGE;
+	float t_delta_z = (direction[2] != 0.0f) ? fabsf(1.0f / direction[2]) : LARGE;
+
+	// calculate
+	bool first_step = true;
+	float t = 0.0f;
+
+	while(t <= max_distance) {
+		if(!first_step) {
+			Block block = world_get_block(world, x, y, z);
+			if(block != BLOCK_AIR) { // if block is solid
+				printf("Ray at voxel (%d, %d, %d), t = %.2f\n", x, y, z, t);
+
+printf("Hit voxel: (%d, %d, %d)\n", x, y, z);
+printf("Block bounds: [%.1f, %.1f] x [%.1f, %.1f] x [%.1f, %.1f]\n",
+       x - 0.5f, x + 0.5f,
+       y - 0.5f, y + 0.5f,
+       z - 0.5f, z + 0.5f);
+
+				(*out_coord)[0] = x;
+				(*out_coord)[1] = y;
+				(*out_coord)[2] = z;
+
+				*out_block = block;
+				return true;
+			}
+		} else {
+			first_step = false;
+		}
+
+
+		if (t_max_x < t_max_y) {
+    		if (t_max_x < t_max_z) {
+        		x += step_x;
+        		t = t_max_x;
+        		t_max_x += t_delta_x;
+
+				(*out_normal)[0] = -step_x;
+				(*out_normal)[1] = 0;
+				(*out_normal)[2] = 0;
+    		} else {
+        		z += step_z;
+        		t = t_max_z;
+        		t_max_z += t_delta_z;
+
+				(*out_normal)[0] = 0;
+				(*out_normal)[1] = 0;
+				(*out_normal)[2] = -step_z;
+    		}
+		} else {
+    		if (t_max_y < t_max_z) {
+    			y += step_y;
+        		t = t_max_y;
+       			t_max_y += t_delta_y;
+
+				(*out_normal)[0] = 0;
+				(*out_normal)[1] = -step_y;
+				(*out_normal)[2] = 0;
+    		} else {
+       			z += step_z;
+        		t = t_max_z;
+        		t_max_z += t_delta_z;
+
+				(*out_normal)[0] = 0;
+				(*out_normal)[1] = 0;
+				(*out_normal)[2] = -step_z;
+    		}
+		}
+	}
+	return false; // no block hit within max_distance
+}
+
+void example_raycast(Game* game, Player* player, World* world) {
+    vec3 origin = {
+		player->camera.position[0],
+    	player->camera.position[1],
+        player->camera.position[2] 
+	};
+    vec3 direction = {
+		player->camera.front[0],
+        player->camera.front[1],
+        player->camera.front[2]
+	};
+
+	// glm_vec3_normalize(origin);
+	glm_vec3_normalize(direction);
+
+    Block hit_block;
+    ivec3 hit_coord;
+    ivec3 hit_normal;
+    float max_dist = 8.0f;
+
+    if(raycast_voxels(world, origin, direction, max_dist, &hit_block, &hit_coord, &hit_normal)) {
+		printf("hit!\n");
+
+		Block selected_block;
+		selected_block = player->selected_block;
+		if(world_get_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != selected_block) {
+			world_set_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2], selected_block);
+			world_rebuild(&game->world);
+
+			// printf("Placing at (%d, %d, %d)\n", x, y, z);
+			// printf("Current block: %d\n", world_get_block(world, x, y, z));
+		}
+	} else {
+		printf("no hit!\n");
+	}
+	fflush(stdout);
+}
+
 void player_place_block(Game* game) {
-	player_set_block(game, game->player.selected_block);
+	example_raycast(game, &game->player, &game->world);
+	// player_set_block(game, game->player.selected_block);
 }
 
 void player_destroy_block(Game* game) {
-	player_set_block(game, BLOCK_AIR);
+	// player_set_block(game, BLOCK_AIR);
 }
-
-/*
-int raycast(World* world, float ox, float oy, float oz, float dx, float dy, float dz,
-            int* out_x, int* out_y, int* out_z, float max_distance) {
-    const float step = 0.05f;
-
-    for (float t = 0.0f; t < max_distance; t += step) {
-        int x = (int)floorf(ox + dx * t);
-        int y = (int)floorf(oy + dy * t);
-        int z = (int)floorf(oz + dz * t);
-
-        if (x < 0 || x >= WORLD_SIZE_X ||
-            y < 0 || y >= WORLD_SIZE_Y ||
-            z < 0 || z >= WORLD_SIZE_Z)
-            continue;
-
-        if (world_get_block(world, x, y, z) != BLOCK_AIR) {
-            int px = x - (dx > 0 ? 1 : (dx < 0 ? -1 : 0));
-            int py = y - (dy > 0 ? 1 : (dy < 0 ? -1 : 0));
-            int pz = z - (dz > 0 ? 1 : (dz < 0 ? -1 : 0));
-
-            if (px >= 0 && px < WORLD_SIZE_X &&
-                py >= 0 && py < WORLD_SIZE_Y &&
-                pz >= 0 && pz < WORLD_SIZE_Z) {
-                *out_x = px;
-                *out_y = py;
-                *out_z = pz;
-                return 1;
-            } else {
-                return 0; // Hit block, but can't place
-            }
-        }
-    }
-    return 0;
-}
-*/
 
