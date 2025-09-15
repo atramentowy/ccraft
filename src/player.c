@@ -4,7 +4,7 @@
 #define CAMERA_OFFSET 0.5f
 
 void player_init(Player* player) {
-	vec3 collision_box = {0.5f, 2.0f, 0.5f};
+	vec3 collision_box = {0.5f, 1.8f, 0.5f};
 	vec3 spawn_position = {2.0f, 6.0f, 6.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
 
@@ -102,30 +102,25 @@ bool raycast_voxels(World* world, vec3 origin, vec3 direction, float max_distanc
 	float t_delta_z = (direction[2] != 0.0f) ? fabsf(1.0f / direction[2]) : LARGE;
 
 	// calculate
-	bool first_step = true;
 	float t = 0.0f;
-
 	while(t <= max_distance) {
-		if(!first_step) {
-			Block block = world_get_block(world, x, y, z);
-			if(block != BLOCK_AIR) { // if block is solid
-				printf("Ray at voxel (%d, %d, %d), t = %.2f\n", x, y, z, t);
+		Block block = world_get_block(world, x, y, z);
+		if(block != BLOCK_AIR) { // if block is solid
+			/*
+				printf("Hit voxel at (%d, %d, %d), t = %.2f\n", x, y, z, t);
+				printf("Block bounds: [%.1f, %.1f] x [%.1f, %.1f] x [%.1f, %.1f]\n",
+       				x - 0.5f, x + 0.5f,
+       				y - 0.5f, y + 0.5f,
+       				z - 0.5f, z + 0.5f				
+				);
+			*/
 
-printf("Hit voxel: (%d, %d, %d)\n", x, y, z);
-printf("Block bounds: [%.1f, %.1f] x [%.1f, %.1f] x [%.1f, %.1f]\n",
-       x - 0.5f, x + 0.5f,
-       y - 0.5f, y + 0.5f,
-       z - 0.5f, z + 0.5f);
+			(*out_coord)[0] = x;
+			(*out_coord)[1] = y;
+			(*out_coord)[2] = z;
 
-				(*out_coord)[0] = x;
-				(*out_coord)[1] = y;
-				(*out_coord)[2] = z;
-
-				*out_block = block;
-				return true;
-			}
-		} else {
-			first_step = false;
+			*out_block = block;
+			return true;
 		}
 
 
@@ -170,50 +165,82 @@ printf("Block bounds: [%.1f, %.1f] x [%.1f, %.1f] x [%.1f, %.1f]\n",
 	return false; // no block hit within max_distance
 }
 
-void example_raycast(Game* game, Player* player, World* world) {
-    vec3 origin = {
-		player->camera.position[0],
-    	player->camera.position[1],
-        player->camera.position[2] 
+void player_place_block(Game* game) {
+ 	vec3 origin = {
+		game->player.camera.position[0],
+    	game->player.camera.position[1],
+        game->player.camera.position[2] 
 	};
     vec3 direction = {
-		player->camera.front[0],
-        player->camera.front[1],
-        player->camera.front[2]
+		game->player.camera.front[0],
+        game->player.camera.front[1],
+        game->player.camera.front[2]
 	};
-
-	// glm_vec3_normalize(origin);
 	glm_vec3_normalize(direction);
 
     Block hit_block;
     ivec3 hit_coord;
     ivec3 hit_normal;
-    float max_dist = 8.0f;
 
-    if(raycast_voxels(world, origin, direction, max_dist, &hit_block, &hit_coord, &hit_normal)) {
-		printf("hit!\n");
+    float max_dist = 5.0f;
+    if(raycast_voxels(&game->world, origin, direction, max_dist, 
+				&hit_block, &hit_coord, &hit_normal)) {
+		// printf("hit!\n");
 
 		Block selected_block;
-		selected_block = player->selected_block;
-		if(world_get_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != selected_block) {
-			world_set_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2], selected_block);
-			world_rebuild(&game->world);
+		selected_block = game->player.selected_block;
+		
+		glm_ivec3_add(hit_normal, hit_coord, hit_coord);
+		if(world_get_block(&game->world, 
+					hit_coord[0], hit_coord[1], hit_coord[2]) != selected_block) {
 
+			world_set_block(&game->world, 
+					hit_coord[0], hit_coord[1], hit_coord[2], selected_block);
+			//world_rebuild(&game->world);
+			world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
 			// printf("Placing at (%d, %d, %d)\n", x, y, z);
 			// printf("Current block: %d\n", world_get_block(world, x, y, z));
 		}
-	} else {
-		printf("no hit!\n");
 	}
 	fflush(stdout);
 }
 
-void player_place_block(Game* game) {
-	example_raycast(game, &game->player, &game->world);
-	// player_set_block(game, game->player.selected_block);
-}
-
 void player_destroy_block(Game* game) {
-	// player_set_block(game, BLOCK_AIR);
+	vec3 origin = {
+		game->player.camera.position[0],
+    	game->player.camera.position[1],
+        game->player.camera.position[2] 
+	};
+    vec3 direction = {
+		game->player.camera.front[0],
+        game->player.camera.front[1],
+        game->player.camera.front[2]
+	};
+	glm_vec3_normalize(direction);
+
+    Block hit_block;
+    ivec3 hit_coord;
+    ivec3 hit_normal;
+
+    float max_dist = 5.0f;
+    if(raycast_voxels(&game->world, origin, direction, max_dist, 
+				&hit_block, &hit_coord, &hit_normal)) {
+		// printf("hit!\n");
+
+		Block block = BLOCK_AIR;
+		
+		if(world_get_block(
+			&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != block) {
+
+			world_set_block(
+				&game->world,hit_coord[0], hit_coord[1], hit_coord[2], block);
+			// world_rebuild(&game->world);
+			world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
+
+			// printf("Destroying at (%d, %d, %d)\n", x, y, z);
+			// printf("Current block: %d\n", world_get_block(world, x, y, z));
+		}
+	}
+	fflush(stdout);
 }
 

@@ -83,28 +83,19 @@ void entity_update(World* world, Entity* entity, float timestep) {
         entity->velocity[1] += GRAVITY * timestep;
     }
 
-	// apply xz decceleration
-	float drag = 0.1f;
-	// x
-	float decel = drag * fabs(entity->velocity[0]);
-    if (entity->velocity[0] > 0.0f) {
-        entity->velocity[0] -= decel;
-        if (entity->velocity[0] < 0.0f) entity->velocity[0] = 0.0f;
-    } else if (entity->velocity[0] < 0.0f) {
-        entity->velocity[0] += decel;
-        if (entity->velocity[0] > 0.0f) entity->velocity[0] = 0.0f;
+    // Apply XZ drag
+    float drag = 0.1f;
+    for (int axis = 0; axis < 3; axis += 2) { // x and z only
+        float decel = drag * fabs(entity->velocity[axis]);
+        if (entity->velocity[axis] > 0.0f) {
+            entity->velocity[axis] -= decel;
+            if (entity->velocity[axis] < 0.0f) entity->velocity[axis] = 0.0f;
+        } else if (entity->velocity[axis] < 0.0f) {
+            entity->velocity[axis] += decel;
+            if (entity->velocity[axis] > 0.0f) entity->velocity[axis] = 0.0f;
+        }
+        if (fabs(entity->velocity[axis]) < 0.01f) entity->velocity[axis] = 0.0f;
     }
-	
-	// z
-	decel = drag * fabs(entity->velocity[2]);
-	if (entity->velocity[2] > 0.0f) {
-        entity->velocity[2] -= decel;
-        if (entity->velocity[2] < 0.0f) entity->velocity[2] = 0.0f;
-    } else if (entity->velocity[2] < 0.0f) {
-        entity->velocity[2] += decel;
-        if (entity->velocity[2] > 0.0f) entity->velocity[2] = 0.0f;
-    }
-
 
 	// Kill tiny velocities to prevent jitter
 	if (fabs(entity->velocity[0]) < 0.01f) entity->velocity[0] = 0.0f;
@@ -116,19 +107,25 @@ void entity_update(World* world, Entity* entity, float timestep) {
     glm_vec3_scale(entity->velocity, timestep, scaled_vel);
     glm_vec3_add(entity->position, scaled_vel, next_pos);
 
-    // Ground probe
+	// Ground probe
     Entity probe = *entity;
     probe.position[1] -= GROUND_TOLERANCE;
     bool touching_ground = collides_with_voxels(world, &probe);
 
-    // y collision
+    // Y-axis collision (up and down)
     Entity temp = *entity;
     temp.position[1] = next_pos[1];
-    bool hit_ground = collides_with_voxels(world, &temp);
+    bool y_collision = collides_with_voxels(world, &temp);
 
-    if (hit_ground && entity->velocity[1] < 0.0f) {
-        entity->velocity[1] = 0.0f;
-        entity->is_on_ground = true;
+    if (y_collision) {
+        if (entity->velocity[1] < 0.0f) {
+            // Falling
+            entity->velocity[1] = 0.0f;
+            entity->is_on_ground = true;
+        } else if (entity->velocity[1] > 0.0f) {
+            // Rising into ceiling
+            entity->velocity[1] = 0.0f;
+        }
     } else {
         entity->position[1] = next_pos[1];
         entity->is_on_ground = touching_ground && entity->velocity[1] <= 0.0f;

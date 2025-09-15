@@ -19,7 +19,8 @@ void world_set_block(World* world, int x, int y, int z, Block block);
 void world_init(World* world);
 void world_unload(World* world);
 void world_generate(World* world);
-void world_rebuild(World* world);
+void world_rebuild(World* world); // rebuild whole mesh
+void world_rebuild_block(World* world, int x, int y, int z); // rebuild around block
 void world_draw(const RenderContext* ctx, World* world, Shader* shader);
 
 #endif // WORLD_H

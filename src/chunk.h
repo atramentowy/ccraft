@@ -34,7 +34,6 @@ typedef struct {
 } Vertex;
 
 typedef struct Chunk {
-    // BlockType blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 	Block* blocks;
 
 	Vertex* vertices;
@@ -57,6 +56,7 @@ void chunk_set_block(Chunk* chunk, int x, int y, int z, Block block);
 void chunk_init(Chunk* chunk);
 void chunk_unload(Chunk* chunk);
 void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz);
+void chunk_rebuild_block(World* world, Chunk* chunk, int cx, int cy, int cz, int x, int y, int z);
 void chunk_draw(const Chunk* chunk, Shader* shader);
 
 #endif

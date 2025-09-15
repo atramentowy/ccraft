@@ -37,7 +37,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void scroll_callback(GLFWwindow* window, double _xoffset, double yoffset) {
 	Game* game = (Game*)glfwGetWindowUserPointer(window);
 
-    camera_process_scroll(&game->player.camera, (float)yoffset);
+    // camera_process_scroll(&game->player.camera, (float)yoffset);
+	if (yoffset > 0.0f) {
+		game->player.selected_block--; // selected slot 0-9
+	} else {
+		game->player.selected_block++;
+	}
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -46,7 +51,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (action == GLFW_PRESS) {
         switch (key) {
         	case GLFW_KEY_1:
-                game->player.selected_block = BLOCK_DIRT;
+                // game->player.selected_block = BLOCK_DIRT;
                 break;
             case GLFW_KEY_2:
                 break;
@@ -75,7 +80,39 @@ void process_input(GLFWwindow* window) {
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(game->window, true);
-	
+
+	// alternative camera movement
+	float sensitivity = 6.0f;
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || 
+			glfwGetKey(window, GLFW_KEY_UP) == GLFW_REPEAT) {
+		float xoffset = 0.0f;
+		float yoffset = 1.0f * sensitivity;
+
+		camera_process_mouse(&game->player.camera, xoffset, yoffset, true);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || 
+			glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_REPEAT) {
+		float xoffset = 0.0f;
+		float yoffset = -1.0f * sensitivity;
+
+		camera_process_mouse(&game->player.camera, xoffset, yoffset, true);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || 
+			glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_REPEAT) {
+		float xoffset = 1.0f * sensitivity;
+		float yoffset = 0.0f;
+
+		camera_process_mouse(&game->player.camera, xoffset, yoffset, true);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || 
+			glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_REPEAT) {
+		float xoffset = -1.0f * sensitivity;
+		float yoffset = 0.0f;
+
+		camera_process_mouse(&game->player.camera, xoffset, yoffset, true);
+	}
+
 	// player movement
     vec3 move_dir;
     glm_vec3_zero(move_dir);
@@ -111,5 +148,12 @@ void process_input(GLFWwindow* window) {
         glm_vec3_normalize(game->player.entity.velocity);
         glm_vec3_scale(game->player.entity.velocity, max_speed, game->player.entity.velocity);
     }
+
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS &&
+    	game->player.entity.is_on_ground) {
+
+    	vec3 jump_force = { 0.0f, 55.0f, 0.0f };
+    	entity_apply_force(&game->player.entity, jump_force);
+	}
 }
 

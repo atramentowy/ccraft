@@ -111,27 +111,8 @@ void chunk_set_block(Chunk* chunk, int x, int y, int z, Block block) {
 void chunk_init(Chunk* chunk) {
 	chunk->blocks = malloc(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
 	memset(chunk->blocks, BLOCK_AIR, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
-
-    /*
-	 for (int x = 0; x < CHUNK_SIZE; x++) {
-        for (int z = 0; z < CHUNK_SIZE; z++) {
-            for (int y = 0; y < CHUNK_SIZE; y++) {
-                Block block = BLOCK_AIR;
-
-                if (y < CHUNK_SIZE / 4) {
-                    block = BLOCK_STONE;
-                } else if (y < CHUNK_SIZE / 4 + 3) {
-                    block = BLOCK_DIRT;
-                } else if (y == CHUNK_SIZE / 4 + 3) {
-                    block = BLOCK_GRASS;
-                }
-
-                chunk->blocks[chunk_get_block_index(x, y, z)] = block;
-            }
-        }
-    }*/
 	// chunk->blocks[chunk_get_block_index(0, 0, 0)] = BLOCK_GRASS;
-	chunk_set_block(chunk, 0, 0, 0, BLOCK_GRASS);
+	// chunk_set_block(chunk, 0, 0, 0, BLOCK_GRASS);
 
 	chunk->vertices = NULL;
 	chunk->indices = NULL;
@@ -246,6 +227,62 @@ void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {
     glBindVertexArray(0);
 
 	chunk->dirty = false;
+}
+
+void chunk_rebuild_block(World* world, Chunk* chunk, int cx, int cy, int cz, int x, int y, int z) {
+	const int direction_offsets[DIR_COUNT][3] = {
+    	{ 1,  0,  0}, // DIR_POS_X
+    	{-1,  0,  0}, // DIR_NEG_X
+    	{ 0,  1,  0}, // DIR_POS_Y
+    	{ 0, -1,  0}, // DIR_NEG_Y
+    	{ 0,  0,  1}, // DIR_POS_Z
+    	{ 0,  0, -1}  // DIR_NEG_Z
+	};
+
+	// Loop over the block and its 6 neighbors
+    for (int dx = -1; dx <= 1; dx++) {
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int bx = x + dx;
+                int by = y + dy;
+                int bz = z + dz;
+
+                // Skip out-of-bounds blocks
+                if (bx < 0 || bx >= CHUNK_SIZE ||
+                    by < 0 || by >= CHUNK_SIZE ||
+                    bz < 0 || bz >= CHUNK_SIZE) {
+                    continue;
+                }
+
+                Block block = chunk_get_block(chunk, bx, by, bz);
+                if (block == BLOCK_AIR) continue;
+
+                for (Direction dir = 0; dir < DIR_COUNT; dir++) {
+                    int nx = bx + direction_offsets[dir][0];
+                    int ny = by + direction_offsets[dir][1];
+                    int nz = bz + direction_offsets[dir][2];
+
+                    Block neighbor = world_get_block(world,
+                        cx * CHUNK_SIZE + nx,
+                        cy * CHUNK_SIZE + ny,
+                        cz * CHUNK_SIZE + nz);
+					
+					vec3 posf = { (float)bx, (float)by, (float)bz };
+                    if (neighbor == BLOCK_AIR) {
+                        // mesh_add_face(chunk->mesh, bx, by, bz, dir);
+						// add_face(chunk, posf, DIR_POS_Z, block);
+						printf("add");
+                    } else {
+						printf("remove");
+                        // mesh_remove_face(chunk->mesh, bx, by, bz, dir);
+                    }
+                }
+			}
+        }
+    }
+
+    // Upload updated mesh to GPU
+    // mesh_upload(chunk->mesh);
 }
 
 void chunk_draw(const Chunk* chunk, Shader* shader) {
