@@ -14,7 +14,8 @@ void player_init(Player* player) {
 	camera_spawn_position[1] += CAMERA_OFFSET;
 	camera_init(&player->camera, camera_spawn_position, up, CAMERA_YAW, CAMERA_PITCH);
 
-	player->selected_block = BLOCK_GRASS;
+    inventory_init(&player->inventory);
+    player->selected_slot = 0;
 	glm_vec3_copy(player->entity.position, player->entity.prev_position);
 }
 
@@ -188,7 +189,8 @@ void player_place_block(Game* game) {
 		// printf("hit!\n");
 
 		Block selected_block;
-		selected_block = game->player.selected_block;
+		// selected_block = game->player.selected_block;
+        selected_block = game->player.inventory.slots[game->player.selected_slot][0];
 		
 		glm_ivec3_add(hit_normal, hit_coord, hit_coord);
 		if(world_get_block(&game->world, 
@@ -196,8 +198,8 @@ void player_place_block(Game* game) {
 
 			world_set_block(&game->world, 
 					hit_coord[0], hit_coord[1], hit_coord[2], selected_block);
-			//world_rebuild(&game->world);
-			world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
+			world_rebuild(&game->world);
+			// world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
 			// printf("Placing at (%d, %d, %d)\n", x, y, z);
 			// printf("Current block: %d\n", world_get_block(world, x, y, z));
 		}
@@ -228,14 +230,13 @@ void player_destroy_block(Game* game) {
 		// printf("hit!\n");
 
 		Block block = BLOCK_AIR;
-		
 		if(world_get_block(
 			&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != block) {
 
 			world_set_block(
 				&game->world,hit_coord[0], hit_coord[1], hit_coord[2], block);
-			// world_rebuild(&game->world);
-			world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
+			world_rebuild(&game->world);
+			// world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
 
 			// printf("Destroying at (%d, %d, %d)\n", x, y, z);
 			// printf("Current block: %d\n", world_get_block(world, x, y, z));

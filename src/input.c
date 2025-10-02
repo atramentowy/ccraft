@@ -39,9 +39,17 @@ void scroll_callback(GLFWwindow* window, double _xoffset, double yoffset) {
 
     // camera_process_scroll(&game->player.camera, (float)yoffset);
 	if (yoffset > 0.0f) {
-		game->player.selected_block--; // selected slot 0-9
+        if(game->player.selected_slot > 0) {
+		    game->player.selected_slot--;
+        } else {
+            game->player.selected_slot = 8;
+        }
 	} else {
-		game->player.selected_block++;
+        if(game->player.selected_slot < 8) {
+		    game->player.selected_slot++;
+        } else {
+            game->player.selected_slot = 0;
+        }
 	}
 }
 
@@ -51,25 +59,36 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (action == GLFW_PRESS) {
         switch (key) {
         	case GLFW_KEY_1:
-                // game->player.selected_block = BLOCK_DIRT;
+                game->player.selected_slot = 0;
                 break;
             case GLFW_KEY_2:
+                game->player.selected_slot = 1;
                 break;
             case GLFW_KEY_3:
+                game->player.selected_slot = 2;
                 break;
             case GLFW_KEY_4:
+                game->player.selected_slot = 3;
                 break;
             case GLFW_KEY_5:
+                game->player.selected_slot = 4;
                 break;
             case GLFW_KEY_6:
+                game->player.selected_slot = 5;
                 break;
             case GLFW_KEY_7:
+                game->player.selected_slot = 6;
                 break;
             case GLFW_KEY_8:
+                game->player.selected_slot = 7;
                 break;
             case GLFW_KEY_9:
+                game->player.selected_slot = 8;
                 break;
-            case GLFW_KEY_0:
+            case GLFW_KEY_E:
+                game->player.inventory.slots[game->player.selected_slot][0]++;
+                break;
+            default:
                 break;
         }
     }

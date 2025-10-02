@@ -4,6 +4,7 @@
 #include "camera.h"
 #include "frustum.h"
 #include "chunk.h"
+#include "inventory.h"
 #include "entity.h"
 
 typedef struct Game Game;
@@ -14,7 +15,8 @@ typedef struct {
 	Camera camera;
 	Frustum frustum;
 	Entity entity;
-	Block selected_block;
+	int selected_slot;
+    Inventory inventory;
 } Player;
 
 void player_init(Player* player);
