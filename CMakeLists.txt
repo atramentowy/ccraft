@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 project(ccraft C)
 
 # GLAD
-add_library(glad libs/glad/src/glad.c)
-target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/libs/glad/include)
+add_library(glad libs/glad/glad.c)
+target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/libs/glad)
 
 # GLFW
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)

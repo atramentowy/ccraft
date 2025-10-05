@@ -2,7 +2,6 @@
 
 #include "filepath.h"
 #include "texture.h"
-#include "cube.h"
 
 int game_init(Game* game) {
 	game->window_width = 800;
@@ -24,7 +23,7 @@ int game_init(Game* game) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_SAMPLES, 4); // msaa
+	glfwWindowHint(GLFW_SAMPLES, 8); // msaa
 
 	game->window = glfwCreateWindow(game->window_width, game->window_height, "ccraft", NULL, NULL);
 	if(!game->window) {
@@ -39,6 +38,14 @@ int game_init(Game* game) {
 		return -1;
 	}
 
+    GLint num_extensions = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+
+    for (GLint i = 0; i < num_extensions; ++i) {
+        const char* ext = (const char*)glGetStringi(GL_EXTENSIONS, i);
+        printf("Extension %d: %s\n", i, ext);
+    }
+
 	// set callbacks
 	glfwSetWindowUserPointer(game->window, game);
 	glfwSetErrorCallback(error_callback);
@@ -51,6 +58,7 @@ int game_init(Game* game) {
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+    // glEnable(GL_BLEND);
 	
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -71,8 +79,8 @@ int game_init(Game* game) {
 	free(frag_path);
 
 	// textures atlas
-	char* texture_path = make_path("res/atlas.png");
-	path_make_absolute(texture_path, "res/atlas.png");
+	char* texture_path = make_path("res/textures.png");
+	path_make_absolute(texture_path, "res/textures.png");
 	Texture atlas = texture_create(texture_path, GL_TEXTURE_2D);
 	texture_bind(&atlas, 0);
 	free(texture_path);
@@ -82,13 +90,10 @@ int game_init(Game* game) {
 	world_rebuild(&game->world);
 	player_init(&game->player);
 
-	// test entity
-	vec3 ent_pos = {2.0f, 12.0f, 2.0f};
-	entity_init(&game->entity, ent_pos, 1.0f, 1.0f, 1.0f, 1.0f);
+    return 0;
 }
 
 void game_run(Game* game) {
-	setup_cube_mesh();
 	while(!glfwWindowShouldClose(game->window)) {
 		game->aspect = (float)game->window_width / (float)game->window_height;
 		
@@ -117,21 +122,6 @@ void game_run(Game* game) {
 		shader_use(&game->shader);
 		player_update(&game->player, game);
 		world_draw(&game->ctx, &game->world, &game->shader);
-
-		// set model matrix
-		mat4 model;
-		glm_mat4_identity(model);
-		vec3 translation = {
-			game->entity.position[0],
-			game->entity.position[1],
-			game->entity.position[2]
-		};
-		glm_translate(model, translation);
-		shader_set_mat4(&game->shader, "model", model);
-
-		// draw test cube
-		draw_cube_mesh();
-		// printf("Y Pos: %.2f | Y Vel: %.2f | is_on_ground: %d\n", game->entity.position[1], game->entity.velocity[1], game->entity.is_on_ground);
 
 		glfwSwapBuffers(game->window);
 	}

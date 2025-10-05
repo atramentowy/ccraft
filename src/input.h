@@ -1,7 +1,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include <glad/glad.h>
+#include <glad.h>
 #include <GLFW/glfw3.h>
 
 void error_callback(int error, const char* description);

@@ -52,7 +52,7 @@ void player_update(Player* player, Game* game) {
 	glm_vec3_copy(player->entity.position, player->entity.prev_position);
 }
 
-void player_set_block(Game* game, Block block) {
+void player_set_block(Game* game, Block block) { // set a block where the player is standing
 	vec3 origin;
 	glm_vec3_copy(game->player.camera.position, origin);
 
@@ -62,12 +62,12 @@ void player_set_block(Game* game, Block block) {
 
 	if (world_get_block(&game->world, x, y, z) != block) {
 		world_set_block(&game->world, x, y, z, block);
-		world_rebuild(&game->world);
 	}
 	// printf("Placing at (%d, %d, %d)\n", x, y, z);
 	// printf("Current block: %d\n", world_get_block(world, x, y, z));
 }
 
+// todo: add checking if in worlds bounds
 bool raycast_voxels(World* world, vec3 origin, vec3 direction, float max_distance, 
 		Block* out_block, ivec3* out_coord, ivec3* out_normal) {
 	float LARGE = 1e30f; // A safe large number
@@ -123,7 +123,6 @@ bool raycast_voxels(World* world, vec3 origin, vec3 direction, float max_distanc
 			*out_block = block;
 			return true;
 		}
-
 
 		if (t_max_x < t_max_y) {
     		if (t_max_x < t_max_z) {
@@ -186,10 +185,8 @@ void player_place_block(Game* game) {
     float max_dist = 5.0f;
     if(raycast_voxels(&game->world, origin, direction, max_dist, 
 				&hit_block, &hit_coord, &hit_normal)) {
-		// printf("hit!\n");
 
 		Block selected_block;
-		// selected_block = game->player.selected_block;
         selected_block = game->player.inventory.slots[game->player.selected_slot][0];
 		
 		glm_ivec3_add(hit_normal, hit_coord, hit_coord);
@@ -198,13 +195,40 @@ void player_place_block(Game* game) {
 
 			world_set_block(&game->world, 
 					hit_coord[0], hit_coord[1], hit_coord[2], selected_block);
-			world_rebuild(&game->world);
-			// world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
-			// printf("Placing at (%d, %d, %d)\n", x, y, z);
-			// printf("Current block: %d\n", world_get_block(world, x, y, z));
+
+            // world_rebuild(&game->world);
+            ivec3 chunk_coord = {
+                hit_coord[0] / CHUNK_SIZE,
+                hit_coord[1] / CHUNK_SIZE,
+                hit_coord[2] / CHUNK_SIZE
+            };
+
+            ivec3 local_coord = {
+                hit_coord[0] % CHUNK_SIZE,
+                hit_coord[1] % CHUNK_SIZE,
+                hit_coord[2] % CHUNK_SIZE
+            };
+			
+            // check neighbors
+            if(local_coord[0] == 0 && chunk_coord[0] > 0) { // x
+                game->world.chunks[chunk_coord[0] - 1][chunk_coord[1]][chunk_coord[2]].dirty = true;
+            } else if(local_coord[0] == CHUNK_SIZE && chunk_coord[0] < WORLD_SIZE_X) {
+                game->world.chunks[chunk_coord[0] + 1][chunk_coord[1]][chunk_coord[2]].dirty = true;
+            }
+            if(local_coord[1] == 0 && chunk_coord[0] > 0) { // y
+                game->world.chunks[chunk_coord[0]][chunk_coord[1] - 1][chunk_coord[2]].dirty = true;
+            } else if(local_coord[1] == CHUNK_SIZE && chunk_coord[0] < WORLD_SIZE_X) {
+                game->world.chunks[chunk_coord[0]][chunk_coord[1] + 1][chunk_coord[2]].dirty = true;
+            }
+            if(local_coord[2] == 0 && chunk_coord[0] > 0) { // z
+                game->world.chunks[chunk_coord[0]][chunk_coord[1]][chunk_coord[2] - 1].dirty = true;
+            } else if(local_coord[2] == CHUNK_SIZE && chunk_coord[0] < WORLD_SIZE_X) {
+                game->world.chunks[chunk_coord[0]][chunk_coord[1]][chunk_coord[2] + 1].dirty = true;
+            }
+
+            game->world.chunks[chunk_coord[0]][chunk_coord[1]][chunk_coord[2]].dirty = true;
 		}
 	}
-	fflush(stdout);
 }
 
 void player_destroy_block(Game* game) {
@@ -230,13 +254,42 @@ void player_destroy_block(Game* game) {
 		// printf("hit!\n");
 
 		Block block = BLOCK_AIR;
-		if(world_get_block(
-			&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != block) {
+		if(world_get_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != block) {
 
-			world_set_block(
-				&game->world,hit_coord[0], hit_coord[1], hit_coord[2], block);
-			world_rebuild(&game->world);
+			world_set_block(&game->world,hit_coord[0], hit_coord[1], hit_coord[2], block);
+
+           	// world_rebuild(&game->world);
 			// world_rebuild_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
+            ivec3 chunk_coord = {
+                hit_coord[0] / CHUNK_SIZE,
+                hit_coord[1] / CHUNK_SIZE,
+                hit_coord[2] / CHUNK_SIZE
+            };
+
+            ivec3 local_coord = {
+                hit_coord[0] % CHUNK_SIZE,
+                hit_coord[1] % CHUNK_SIZE,
+                hit_coord[2] % CHUNK_SIZE
+            };
+			
+            // check neighbors
+            if(local_coord[0] == 0 && chunk_coord[0] > 0) { // x
+                game->world.chunks[chunk_coord[0] - 1][chunk_coord[1]][chunk_coord[2]].dirty = true;
+            } else if(local_coord[0] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
+                game->world.chunks[chunk_coord[0] + 1][chunk_coord[1]][chunk_coord[2]].dirty = true;
+            }
+            if(local_coord[1] == 0 && chunk_coord[0] > 0) { // y
+                game->world.chunks[chunk_coord[0]][chunk_coord[1] - 1][chunk_coord[2]].dirty = true;
+            } else if(local_coord[1] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
+                game->world.chunks[chunk_coord[0]][chunk_coord[1] + 1][chunk_coord[2]].dirty = true;
+            }
+            if(local_coord[2] == 0 && chunk_coord[0] > 0) { // z
+                game->world.chunks[chunk_coord[0]][chunk_coord[1]][chunk_coord[2] - 1].dirty = true;
+            } else if(local_coord[2] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
+                game->world.chunks[chunk_coord[0]][chunk_coord[1]][chunk_coord[2] + 1].dirty = true;
+            }
+
+            game->world.chunks[chunk_coord[0]][chunk_coord[1]][chunk_coord[2]].dirty = true;
 
 			// printf("Destroying at (%d, %d, %d)\n", x, y, z);
 			// printf("Current block: %d\n", world_get_block(world, x, y, z));

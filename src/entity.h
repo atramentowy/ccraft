@@ -3,7 +3,7 @@
 
 #include "world.h"
 
-#include <glad/glad.h>
+#include <glad.h>
 #include <cglm/cglm.h>
 #include <stdbool.h>
 

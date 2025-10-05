@@ -111,9 +111,7 @@ void world_generate(World* world) {
 
 	world_set_block(world, 0, 1, 0, BLOCK_GRASS);
 	world_set_block(world, 0, 2, 0, BLOCK_GRASS);
-
 	world_set_block(world, 6, 2, 6, BLOCK_GRASS);
-
 
 	/*
 	int p[512];
@@ -168,26 +166,6 @@ void world_rebuild(World* world) {
     }
 }
 
-void world_rebuild_block(World* world, int x, int y, int z) {
-	// Check if the coordinates are inside the world
-    if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
-        y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
-        z < 0 || z >= CHUNK_SIZE * WORLD_SIZE_Z) {
-        return;
-    }
-
-    int cx = x / CHUNK_SIZE;
-    int cy = y / CHUNK_SIZE;
-    int cz = z / CHUNK_SIZE;
-
-    int bx = x % CHUNK_SIZE;
-    int by = y % CHUNK_SIZE;
-    int bz = z % CHUNK_SIZE;
-
-    Chunk* chunk = &world->chunks[cx][cy][cz];
-	chunk_rebuild_block(world, chunk, cx, cy, cz, bx, by, bz);
-}
-
 void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
 	shader_use(shader);
 	shader_set_mat4(shader, "projection", ctx->projection);
@@ -198,9 +176,9 @@ void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
             for (int z = 0; z < WORLD_SIZE_Z; z++) {
 				Chunk* chunk = &world->chunks[x][y][z];
 
-				// update visibility
-				chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z);
+                if(chunk->dirty) chunk_rebuild(world, chunk, x, y, z); // rebuild if dirty
 
+				chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z); // check in frustum
 				if(!chunk->visible) continue;
 
 				// set model matrix

@@ -1,37 +1,37 @@
 #include "chunk.h"
 #include "world.h"
 
-#include <glad/glad.h>
 #include <cglm/cglm.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
 void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
-	const float tile_width = 1.0f / 4.0f;
-    const float tile_height = 1.0f / 2.0f;
-	
-	const float epsilon = 0.001f;
-    vec2 base_uv = { 
-		tile_width * (block_type % 4) + epsilon,
-		tile_height * (block_type / 2) + epsilon
-	};
+    const float tile_size = 1.0f / 16.0f; // 16x16 tiles
+    const float epsilon = 0.001f;
 
-	/*
+    // Calculate tile X and Y index from block_type
+    int tile_x = block_type % 16;
+    int tile_y = block_type / 16;
+
+    // IMPORTANT: If your texture origin is TOP-LEFT, flip the Y-axis
+    tile_y = 15 - tile_y;
+
+    // Base UV (bottom-left of tile)
+    vec2 base_uv = {
+        tile_x * tile_size + epsilon,
+        tile_y * tile_size + epsilon
+    };
+
+    // UV offsets for each vertex (quad corners)
     vec2 uv_offsets[4] = {
         {0.0f, 0.0f},
-        {tile_width, 0.0f},
-        {tile_width, tile_height},
-        {0.0f, tile_height}
+        {tile_size - 2 * epsilon, 0.0f},
+        {tile_size - 2 * epsilon, tile_size - 2 * epsilon},
+        {0.0f, tile_size - 2 * epsilon}
     };
-	*/
-	vec2 uv_offsets[4] = {
-    	{0.0f, 0.0f},
-    	{tile_width - 2 * epsilon, 0.0f},
-    	{tile_width - 2 * epsilon, tile_height - 2 * epsilon},
-    	{0.0f, tile_height - 2 * epsilon}
-	};
 
+    // Face vertex positions (6 faces, 4 verts each)
     vec3 face_offsets[6][4] = {
         // +X
         {{0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}},
@@ -47,13 +47,15 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
         {{-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}}
     };
 
+    // Reallocate vertex buffer
     Vertex* new_vertices = realloc(chunk->vertices, sizeof(Vertex) * (chunk->vertex_count + 4));
-	if (!new_vertices) {
-		fprintf(stderr, "Failed to realloc vertices\n");
-		return;
-	}
-	chunk->vertices = new_vertices;
+    if (!new_vertices) {
+        fprintf(stderr, "Failed to realloc vertices\n");
+        return;
+    }
+    chunk->vertices = new_vertices;
 
+    // Add 4 vertices for the face
     for (int i = 0; i < 4; ++i) {
         Vertex v;
         glm_vec3_copy(face_offsets[face][i], v.position);
@@ -63,19 +65,21 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
         chunk->vertices[chunk->vertex_count++] = v;
     }
 
-    unsigned int base = (unsigned int)(chunk->vertex_count - 4);
-
-
+    // Reallocate index buffer
     unsigned int* new_indices = realloc(chunk->indices, sizeof(unsigned int) * (chunk->index_count + 6));
-	if (!new_indices) {
-		fprintf(stderr, "Failed to realloc indices\n");
-		return;
-	}
-	chunk->indices = new_indices;
+    if (!new_indices) {
+        fprintf(stderr, "Failed to realloc indices\n");
+        return;
+    }
+    chunk->indices = new_indices;
 
+    unsigned int base = chunk->vertex_count - 4;
+
+    // Add 2 triangles (quad)
     chunk->indices[chunk->index_count++] = base;
     chunk->indices[chunk->index_count++] = base + 1;
     chunk->indices[chunk->index_count++] = base + 2;
+
     chunk->indices[chunk->index_count++] = base + 2;
     chunk->indices[chunk->index_count++] = base + 3;
     chunk->indices[chunk->index_count++] = base;
@@ -112,7 +116,7 @@ void chunk_init(Chunk* chunk) {
 	chunk->blocks = malloc(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
 	memset(chunk->blocks, BLOCK_AIR, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
 	// chunk->blocks[chunk_get_block_index(0, 0, 0)] = BLOCK_GRASS;
-	// chunk_set_block(chunk, 0, 0, 0, BLOCK_GRASS);
+	chunk_set_block(chunk, 0, 0, 0, BLOCK_GRASS);
 
 	chunk->vertices = NULL;
 	chunk->indices = NULL;
@@ -227,62 +231,6 @@ void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {
     glBindVertexArray(0);
 
 	chunk->dirty = false;
-}
-
-void chunk_rebuild_block(World* world, Chunk* chunk, int cx, int cy, int cz, int x, int y, int z) {
-	const int direction_offsets[DIR_COUNT][3] = {
-    	{ 1,  0,  0}, // DIR_POS_X
-    	{-1,  0,  0}, // DIR_NEG_X
-    	{ 0,  1,  0}, // DIR_POS_Y
-    	{ 0, -1,  0}, // DIR_NEG_Y
-    	{ 0,  0,  1}, // DIR_POS_Z
-    	{ 0,  0, -1}  // DIR_NEG_Z
-	};
-
-	// Loop over the block and its 6 neighbors
-    for (int dx = -1; dx <= 1; dx++) {
-        for (int dy = -1; dy <= 1; dy++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                int bx = x + dx;
-                int by = y + dy;
-                int bz = z + dz;
-
-                // Skip out-of-bounds blocks
-                if (bx < 0 || bx >= CHUNK_SIZE ||
-                    by < 0 || by >= CHUNK_SIZE ||
-                    bz < 0 || bz >= CHUNK_SIZE) {
-                    continue;
-                }
-
-                Block block = chunk_get_block(chunk, bx, by, bz);
-                if (block == BLOCK_AIR) continue;
-
-                for (Direction dir = 0; dir < DIR_COUNT; dir++) {
-                    int nx = bx + direction_offsets[dir][0];
-                    int ny = by + direction_offsets[dir][1];
-                    int nz = bz + direction_offsets[dir][2];
-
-                    Block neighbor = world_get_block(world,
-                        cx * CHUNK_SIZE + nx,
-                        cy * CHUNK_SIZE + ny,
-                        cz * CHUNK_SIZE + nz);
-					
-					vec3 posf = { (float)bx, (float)by, (float)bz };
-                    if (neighbor == BLOCK_AIR) {
-                        // mesh_add_face(chunk->mesh, bx, by, bz, dir);
-						// add_face(chunk, posf, DIR_POS_Z, block);
-						printf("add");
-                    } else {
-						printf("remove");
-                        // mesh_remove_face(chunk->mesh, bx, by, bz, dir);
-                    }
-                }
-			}
-        }
-    }
-
-    // Upload updated mesh to GPU
-    // mesh_upload(chunk->mesh);
 }
 
 void chunk_draw(const Chunk* chunk, Shader* shader) {

@@ -9,22 +9,35 @@
 static void texture_load(Texture* texture) {
     glGenTextures(1, &texture->ID);
     glBindTexture(texture->texture_type, texture->ID);
-
+    
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
 	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-
+    /*
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    */
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //
+
+    // Check and apply anisotropic filtering
+    if (GLAD_GL_EXT_texture_filter_anisotropic) {
+        GLfloat maxAniso = 0.0f;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
+
+        GLfloat desiredAniso = fminf(maxAniso, 8.0f); // You can tweak this
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, desiredAniso);
+    }
 
     int width, height, nr_channels;
     stbi_set_flip_vertically_on_load(1);
     unsigned char* data = stbi_load(texture->file_path, &width, &height, &nr_channels, 0);
     if (data) {
-        GLenum format;
+        GLenum format = GL_RGBA;
         if (nr_channels == 1)
             format = GL_RED;
         else if (nr_channels == 3)
@@ -33,7 +46,9 @@ static void texture_load(Texture* texture) {
             format = GL_RGBA;
         else {
             stbi_image_free(data);
-            fprintf(stderr, "TEXTURE: Unsupported texture format: %d channels\n", nr_channels);
+            fprintf(stderr, 
+                "TEXTURE: Unsupported texture format: %d channels\n", nr_channels);
+
             return;
         }
 
@@ -42,6 +57,7 @@ static void texture_load(Texture* texture) {
     } else {
         fprintf(stderr, "TEXTURE: Failed to load texture at path: %s\n", texture->file_path);
     }
+printf("Loaded texture '%s': %dx%d, forced RGBA\n", texture->file_path, width, height);
 
     stbi_image_free(data);
 }
