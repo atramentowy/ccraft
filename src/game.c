@@ -14,6 +14,9 @@ int game_init(Game* game) {
 	// physics
 	game->accumulator = 0.0f;
 
+    game->debug_wireframe_mode = false;
+    game->debug_backface_culling = true;
+
 	// init glfw
 	if(!glfwInit()) {
 		fprintf(stderr, "GLFW: init failed\n");
@@ -54,7 +57,7 @@ int game_init(Game* game) {
     // glEnable(GL_BLEND);
 	
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
+    //
 	// shaders
     char* vert_path = make_path("res/shaders/shader.vert");
 	char* frag_path = make_path("res/shaders/shader.frag");

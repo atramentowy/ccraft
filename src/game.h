@@ -2,10 +2,7 @@
 #define GAME_H
 
 #include "player.h"
-
-#include <GLFW/glfw3.h>
-#include <stdbool.h>
-
+#include "debug.h"
 #include "shader.h"
 #include "render_context.h"
 #include "world.h"
@@ -33,6 +30,9 @@ typedef struct Game {
 	RenderContext ctx;
 	World world;
 	Player player;
+
+    bool debug_wireframe_mode;
+    bool debug_backface_culling;
 } Game;
 
 int game_init(Game* game);

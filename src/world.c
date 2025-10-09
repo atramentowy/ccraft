@@ -107,20 +107,16 @@ void world_init(World* world) {
 }
 
 void world_unload(World* world) {
-    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+    if (!world || !world->chunks) return;
+
+    int chunk_count = WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z;
+
+    for (int i = 0; i < chunk_count; i++) {
         chunk_unload(&world->chunks[i]);
     }
-    free(world->chunks);
 
-    /*
-    for (int x = 0; x < WORLD_SIZE_X; x++) {
-        for (int y = 0; y < WORLD_SIZE_Y; y++) {
-            for (int z = 0; z < WORLD_SIZE_Z; z++) {
-                chunk_unload(&world->chunks[x][y][z]);
-            }
-        }
-    }
-    */
+    free(world->chunks);
+    world->chunks = NULL;
 }
 
 void world_generate(World* world) {
@@ -232,34 +228,5 @@ void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
 		// draw chunk
 		chunk_draw(chunk, shader);
     }
-
-
-    /*
-    for (int x = 0; x < WORLD_SIZE_X; x++) {
-        for (int y = 0; y < WORLD_SIZE_Y; y++) {
-            for (int z = 0; z < WORLD_SIZE_Z; z++) {
-				Chunk* chunk = &world->chunks[x][y][z];
-
-                if(chunk->dirty) chunk_rebuild(world, chunk, x, y, z); // rebuild if dirty
-
-				chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z); // check in frustum
-				if(!chunk->visible) continue;
-
-				// set model matrix
-				mat4 model;
-				glm_mat4_identity(model);
-				vec3 translation = {
-					x * CHUNK_SIZE,
-					y * CHUNK_SIZE,
-					z * CHUNK_SIZE
-				};
-				glm_translate(model, translation);
-				shader_set_mat4(shader, "model", model);
-
-				// draw chunk
-				chunk_draw(chunk, shader);
-            }
-        }
-    }
-    */
 }
+

@@ -10,11 +10,9 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
     const float tile_size = 1.0f / 16.0f; // 16x16 tiles
     const float epsilon = 0.001f;
 
-    // Calculate tile X and Y index from block_type
     int tile_x = block_type % 16;
     int tile_y = block_type / 16;
 
-    // IMPORTANT: If your texture origin is TOP-LEFT, flip the Y-axis
     tile_y = 15 - tile_y;
 
     // Base UV (bottom-left of tile)
@@ -23,7 +21,6 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
         tile_y * tile_size + epsilon
     };
 
-    // UV offsets for each vertex (quad corners)
     vec2 uv_offsets[4] = {
         {0.0f, 0.0f},
         {tile_size - 2 * epsilon, 0.0f},
@@ -31,7 +28,6 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
         {0.0f, tile_size - 2 * epsilon}
     };
 
-    // Face vertex positions (6 faces, 4 verts each)
     vec3 face_offsets[6][4] = {
         // +X
         {{0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}},
@@ -79,7 +75,6 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, Block block_type) {
     chunk->indices[chunk->index_count++] = base;
     chunk->indices[chunk->index_count++] = base + 1;
     chunk->indices[chunk->index_count++] = base + 2;
-
     chunk->indices[chunk->index_count++] = base + 2;
     chunk->indices[chunk->index_count++] = base + 3;
     chunk->indices[chunk->index_count++] = base;
@@ -115,6 +110,7 @@ void chunk_set_block(Chunk* chunk, int x, int y, int z, Block block) {
 void chunk_init(Chunk* chunk) {
 	chunk->blocks = malloc(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
 	memset(chunk->blocks, BLOCK_AIR, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
+
 	// chunk->blocks[chunk_get_block_index(0, 0, 0)] = BLOCK_GRASS;
 	chunk_set_block(chunk, 0, 0, 0, BLOCK_GRASS);
 
@@ -133,14 +129,23 @@ void chunk_init(Chunk* chunk) {
 }
 
 void chunk_unload(Chunk* chunk) {
-	free(chunk->blocks);
-    if (chunk->vao) glDeleteVertexArrays(1, &chunk->vao);
-    if (chunk->vbo) glDeleteBuffers(1, &chunk->vbo);
-    if (chunk->ebo) glDeleteBuffers(1, &chunk->ebo);
+    // Free dynamically allocated block data
+    free(chunk->blocks);
 
-    chunk->vao = chunk->vbo = chunk->ebo = 0;
-	free(chunk->vertices);
-	free(chunk->indices);
+    if (chunk->vao)
+        glDeleteVertexArrays(1, &chunk->vao);
+    if (chunk->vbo)
+        glDeleteBuffers(1, &chunk->vbo);
+    if (chunk->ebo)
+        glDeleteBuffers(1, &chunk->ebo);
+
+    chunk->vao = 0;
+    chunk->vbo = 0;
+    chunk->ebo = 0;
+
+    // Free dynamically allocated mesh data
+    free(chunk->vertices);
+    free(chunk->indices);
 }
 
 void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {

@@ -55,41 +55,35 @@ void scroll_callback(GLFWwindow* window, double _xoffset, double yoffset) {
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	Game* game = (Game*)glfwGetWindowUserPointer(window);
+    if(!game) return;
 
     if (action == GLFW_PRESS) {
-        switch (key) {
-        	case GLFW_KEY_1:
-                game->player.selected_slot = 0;
-                break;
-            case GLFW_KEY_2:
-                game->player.selected_slot = 1;
-                break;
-            case GLFW_KEY_3:
-                game->player.selected_slot = 2;
-                break;
-            case GLFW_KEY_4:
-                game->player.selected_slot = 3;
-                break;
-            case GLFW_KEY_5:
-                game->player.selected_slot = 4;
-                break;
-            case GLFW_KEY_6:
-                game->player.selected_slot = 5;
-                break;
-            case GLFW_KEY_7:
-                game->player.selected_slot = 6;
-                break;
-            case GLFW_KEY_8:
-                game->player.selected_slot = 7;
-                break;
-            case GLFW_KEY_9:
-                game->player.selected_slot = 8;
-                break;
-            case GLFW_KEY_E:
-                game->player.inventory.slots[game->player.selected_slot][0]++;
-                break;
-            default:
-                break;
+        if(key == GLFW_KEY_F1) {
+            debug_set_wireframe_mode(!game->debug_wireframe_mode);
+            game->debug_wireframe_mode = !game->debug_wireframe_mode;
+        } else if(key == GLFW_KEY_F2) {
+            debug_set_backface_culling(game->debug_backface_culling);
+            game->debug_backface_culling = !game->debug_backface_culling;
+        } else if(key == GLFW_KEY_1) {
+            game->player.selected_slot = 0;
+        } else if(key == GLFW_KEY_2) {
+            game->player.selected_slot = 1;
+        } else if(key == GLFW_KEY_3) {
+            game->player.selected_slot = 2;
+        } else if(key == GLFW_KEY_4) {
+            game->player.selected_slot = 3;
+        } else if(key == GLFW_KEY_5) {
+            game->player.selected_slot = 4;
+        } else if(key == GLFW_KEY_6) {
+            game->player.selected_slot = 5;
+        } else if(key == GLFW_KEY_7) {
+            game->player.selected_slot = 6;
+        } else if(key == GLFW_KEY_8) {
+            game->player.selected_slot = 7;
+        } else if(key == GLFW_KEY_9) {
+            game->player.selected_slot = 8;
+        } else if(key == GLFW_KEY_E) {
+            game->player.inventory.slots[game->player.selected_slot][0]++;
         }
     }
 }
