@@ -151,7 +151,7 @@ void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {
     chunk->vertex_count = 0;
     chunk->index_count = 0;
 
-	Chunk* neighbors[DIR_COUNT];
+	Chunk* neighbors[DIR_COUNT] = {0};
 	for (Direction d = 0; d < DIR_COUNT; ++d) {
 		neighbors[d] = chunk_get_neighbor(world, cx, cy, cz, d);
 	}
@@ -166,50 +166,74 @@ void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz) {
 				
 				// +X
            		if (x == CHUNK_SIZE - 1) {
-                	Block nb = neighbors[DIR_POS_X] ? neighbors[DIR_POS_X]->blocks[chunk_get_block_index(0, y, z)] : BLOCK_AIR;
-                	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_POS_X, bt);
-            	} else if (chunk->blocks[chunk_get_block_index(x+1, y, z)] == BLOCK_AIR) {
-                	add_face(chunk, posf, DIR_POS_X, bt);
+                	Block nb = neighbors[DIR_POS_X] 
+                        ? neighbors[DIR_POS_X]->blocks[chunk_get_block_index(0, y, z)] : 0;
+                	if(nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_X, bt);
+            	} else {
+                    Block nb = chunk->blocks[chunk_get_block_index(x+1, y, z)];
+                    if(nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_X, bt);
             	}
 
             	// -X
             	if (x == 0) {
-                	Block nb = neighbors[DIR_NEG_X] ? neighbors[DIR_NEG_X]->blocks[chunk_get_block_index(CHUNK_SIZE-1, y, z)] : BLOCK_AIR;
-                	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_NEG_X, bt);
-            	} else if (chunk->blocks[chunk_get_block_index(x-1, y, z)] == BLOCK_AIR) {
-                	add_face(chunk, posf, DIR_NEG_X, bt);
+                	Block nb = neighbors[DIR_NEG_X] 
+                        ? neighbors[DIR_NEG_X]->blocks[chunk_get_block_index(CHUNK_SIZE-1, y, z)] : 0;
+                	if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_X, bt);
+            	} else {
+                    Block nb = chunk->blocks[chunk_get_block_index(x-1, y, z)];
+                    if(nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_X, bt);
             	}
 
             	// +Y
             	if (y == CHUNK_SIZE - 1) {
-                	Block nb = neighbors[DIR_POS_Y] ? neighbors[DIR_POS_Y]->blocks[chunk_get_block_index(x, 0, z)] : BLOCK_AIR;
-                	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_POS_Y, bt);
-            	} else if (chunk->blocks[chunk_get_block_index(x, y+1, z)] == BLOCK_AIR) {
-                	add_face(chunk, posf, DIR_POS_Y, bt);
+                	Block nb = neighbors[DIR_POS_Y] 
+                        ? neighbors[DIR_POS_Y]->blocks[chunk_get_block_index(x, 0, z)] : 0;
+                	if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Y, bt);
+            	} else {
+                    Block nb = chunk->blocks[chunk_get_block_index(x, y+1, z)];
+                    if(nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Y, bt);
             	}
 
             	// -Y
             	if (y == 0) {
-                	Block nb = neighbors[DIR_NEG_Y] ? neighbors[DIR_NEG_Y]->blocks[chunk_get_block_index(x, CHUNK_SIZE-1, z)] : BLOCK_AIR;
-                	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_NEG_Y, bt);
-            	} else if (chunk->blocks[chunk_get_block_index(x, y-1, z)] == BLOCK_AIR) {
-                	add_face(chunk, posf, DIR_NEG_Y, bt);
+                	Block nb = neighbors[DIR_NEG_Y] 
+                        ? neighbors[DIR_NEG_Y]->blocks[chunk_get_block_index(x, CHUNK_SIZE-1, z)] : 0;
+                	if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Y, bt);
+            	} else {
+                    Block nb = chunk->blocks[chunk_get_block_index(x, y-1, z)];
+                    if(nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Y, bt);
             	}
 
             	// +Z
             	if (z == CHUNK_SIZE - 1) {
-                	Block nb = neighbors[DIR_POS_Z] ? neighbors[DIR_POS_Z]->blocks[chunk_get_block_index(x, y, 0)] : BLOCK_AIR;
-                	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_POS_Z, bt);
-            	} else if (chunk->blocks[chunk_get_block_index(x, y, z+1)] == BLOCK_AIR) {
-                	add_face(chunk, posf, DIR_POS_Z, bt);
+                	Block nb = neighbors[DIR_POS_Z] 
+                        ? neighbors[DIR_POS_Z]->blocks[chunk_get_block_index(x, y, 0)] : 0;
+                	if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Z, bt);
+            	} else {
+                    Block nb = chunk->blocks[chunk_get_block_index(x, y, z+1)];
+                	if(nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Z, bt);
             	}
 
             	// -Z
             	if (z == 0) {
-                	Block nb = neighbors[DIR_NEG_Z] ? neighbors[DIR_NEG_Z]->blocks[chunk_get_block_index(x, y, CHUNK_SIZE-1)] : BLOCK_AIR;
-                	if (nb == BLOCK_AIR) add_face(chunk, posf, DIR_NEG_Z, bt);
-            	} else if (chunk->blocks[chunk_get_block_index(x, y, z-1)] == BLOCK_AIR) {
-                	add_face(chunk, posf, DIR_NEG_Z, bt);
+                	Block nb = neighbors[DIR_NEG_Z] 
+                        ? neighbors[DIR_NEG_Z]->blocks[chunk_get_block_index(x, y, CHUNK_SIZE-1)] : 0;
+                	if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Z, bt);
+            	} else {
+                    Block nb = chunk->blocks[chunk_get_block_index(x, y, z-1)];
+                    if(nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Z, bt);
             	}
         	}
 		}

@@ -24,6 +24,7 @@ typedef enum {
 typedef enum Block {
     BLOCK_AIR = 0,
 	BLOCK_DIRT,
+    BLOCK_GLASS,
     BLOCK_GRASS,
 	BLOCK_STONE
 } Block;
@@ -50,6 +51,7 @@ typedef struct Chunk {
 } Chunk;
 
 int chunk_get_block_index(int x, int y, int z);
+
 Block chunk_get_block(Chunk* chunk, int x, int y, int z);
 void chunk_set_block(Chunk* chunk, int x, int y, int z, Block block);
 
@@ -57,5 +59,7 @@ void chunk_init(Chunk* chunk);
 void chunk_unload(Chunk* chunk);
 void chunk_rebuild(World* world, Chunk* chunk, int cx, int cy, int cz);
 void chunk_draw(const Chunk* chunk, Shader* shader);
+
+bool is_transparent(Block block);
 
 #endif

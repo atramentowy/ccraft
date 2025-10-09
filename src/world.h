@@ -4,15 +4,16 @@
 #include "chunk.h"
 #include "render_context.h"
 
-#define WORLD_SIZE_X 5
-#define WORLD_SIZE_Y 5
-#define WORLD_SIZE_Z 5
+#define WORLD_SIZE_X 10
+#define WORLD_SIZE_Y 10
+#define WORLD_SIZE_Z 10
 
 typedef struct World {
-	Chunk chunks[WORLD_SIZE_X][WORLD_SIZE_Y][WORLD_SIZE_Z];
-
-
+	// Chunk chunks[WORLD_SIZE_X][WORLD_SIZE_Y][WORLD_SIZE_Z];
+    Chunk* chunks;
 } World;
+
+int world_get_chunk_index(int x, int y, int z);
 
 Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir);
 Block world_get_block(World* world, int x, int y, int z);

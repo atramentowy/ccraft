@@ -23,7 +23,8 @@ int game_init(Game* game) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_SAMPLES, 8); // msaa
+    // glfwWindowHint(GLFW_SAMPLES, 16); // 4x MSAA // does not work for voxels
+
 
 	game->window = glfwCreateWindow(game->window_width, game->window_height, "ccraft", NULL, NULL);
 	if(!game->window) {
@@ -37,14 +38,6 @@ int game_init(Game* game) {
 		fprintf(stderr, "GLAD: failed to initialize\n");
 		return -1;
 	}
-
-    GLint num_extensions = 0;
-    glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
-
-    for (GLint i = 0; i < num_extensions; ++i) {
-        const char* ext = (const char*)glGetStringi(GL_EXTENSIONS, i);
-        printf("Extension %d: %s\n", i, ext);
-    }
 
 	// set callbacks
 	glfwSetWindowUserPointer(game->window, game);
@@ -110,7 +103,7 @@ void game_run(Game* game) {
 
 		// process physics
 		while (game->accumulator >= PHYSICS_TIMESTEP) {
-			entity_update(&game->world, &game->entity, PHYSICS_TIMESTEP);
+			// entity_update(&game->world, &game->entity, PHYSICS_TIMESTEP);
 			entity_update(&game->world, &game->player.entity, PHYSICS_TIMESTEP);
 			game->accumulator -= PHYSICS_TIMESTEP;
 		}

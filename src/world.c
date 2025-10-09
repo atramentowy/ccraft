@@ -2,6 +2,13 @@
 #include "frustum.h"
 #include "perlin.h"
 
+int world_get_chunk_index(int x, int y, int z) {
+    if (x < 0 || x >= WORLD_SIZE_X || y < 0 || y >= WORLD_SIZE_Y || z < 0 || z >= WORLD_SIZE_Z) {
+        return -1;
+    }
+    return x * WORLD_SIZE_X * WORLD_SIZE_Y + y * WORLD_SIZE_Z + z;
+}
+
 Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
 	int offset_x(Direction dir) {
         switch (dir) {
@@ -37,7 +44,7 @@ Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
         return NULL;
     }
 
-    return &world->chunks[nx][ny][nz];
+    return &world->chunks[world_get_chunk_index(nx, ny, nz)];
 }
 
 Block world_get_block(World* world, int x, int y, int z) {
@@ -55,11 +62,11 @@ Block world_get_block(World* world, int x, int y, int z) {
 	int block_y = y % CHUNK_SIZE;
 	int block_z = z % CHUNK_SIZE;
 	
-	Chunk* chunk = &world->chunks[chunk_x][chunk_y][chunk_z];
+	Chunk* chunk = &world->chunks[world_get_chunk_index(chunk_x, chunk_y, chunk_z)];
 	return chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)];
 }
 
-void world_set_block(World* world, int x, int y, int z, Block block) {
+void world_set_block(World* world, int x, int y, int z, Block block) { // idk if it should return value
     // Check if the coordinates are inside the world
     if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
         y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
@@ -75,11 +82,18 @@ void world_set_block(World* world, int x, int y, int z, Block block) {
     int block_y = y % CHUNK_SIZE;
     int block_z = z % CHUNK_SIZE;
 
-    Chunk* chunk = &world->chunks[chunk_x][chunk_y][chunk_z];
+    Chunk* chunk = &world->chunks[world_get_chunk_index(chunk_x, chunk_y, chunk_z)];
     chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)] = block;
 }
 
 void world_init(World* world) {
+    world->chunks = malloc(WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z * sizeof(Chunk));
+    memset(world->chunks, 0, WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z * sizeof(Chunk));
+
+    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+        chunk_init(&world->chunks[i]);
+    }
+    /*
     for (int x = 0; x < WORLD_SIZE_X; x++) {
         for (int y = 0; y < WORLD_SIZE_Y; y++) {
             for (int z = 0; z < WORLD_SIZE_Z; z++) {
@@ -87,10 +101,18 @@ void world_init(World* world) {
             }
         }
     }
+    */
+
 	world_generate(world);
 }
 
 void world_unload(World* world) {
+    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+        chunk_unload(&world->chunks[i]);
+    }
+    free(world->chunks);
+
+    /*
     for (int x = 0; x < WORLD_SIZE_X; x++) {
         for (int y = 0; y < WORLD_SIZE_Y; y++) {
             for (int z = 0; z < WORLD_SIZE_Z; z++) {
@@ -98,6 +120,7 @@ void world_unload(World* world) {
             }
         }
     }
+    */
 }
 
 void world_generate(World* world) {
@@ -155,6 +178,16 @@ void world_generate(World* world) {
 }
 
 void world_rebuild(World* world) {
+    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+        if(!world->chunks[i].dirty) continue;
+
+        int x = i / (WORLD_SIZE_Y * WORLD_SIZE_Z);
+        int y = (i / WORLD_SIZE_Z) % WORLD_SIZE_Y;
+        int z = i % WORLD_SIZE_Z;
+
+        chunk_rebuild(world, &world->chunks[i], x, y, z);
+    }
+    /*
     for (int x = 0; x < WORLD_SIZE_X; x++) {
         for (int y = 0; y < WORLD_SIZE_Y; y++) {
             for (int z = 0; z < WORLD_SIZE_Z; z++) {
@@ -163,7 +196,7 @@ void world_rebuild(World* world) {
         		chunk_rebuild(world, &world->chunks[x][y][z], x, y, z);
             }
         }
-    }
+    }*/
 }
 
 void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
@@ -171,6 +204,37 @@ void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
 	shader_set_mat4(shader, "projection", ctx->projection);
 	shader_set_mat4(shader, "view", ctx->view);
 	
+    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+        Chunk* chunk = &world->chunks[i];
+        
+        int x = i / (WORLD_SIZE_Y * WORLD_SIZE_Z);
+        int y = (i / WORLD_SIZE_Z) % WORLD_SIZE_Y;
+        int z = i % WORLD_SIZE_Z;
+        
+        // rebuild mesh if dirty
+        if(chunk->dirty) chunk_rebuild(world, chunk, x, y, z);
+        
+        // check if in frustum
+		chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z); // check in frustum
+        if(!chunk->visible) continue;
+
+        // set model matrix
+       	mat4 model;
+		glm_mat4_identity(model);
+		vec3 translation = {
+			x * CHUNK_SIZE,
+			y * CHUNK_SIZE,
+			z * CHUNK_SIZE
+		};
+		glm_translate(model, translation);
+		shader_set_mat4(shader, "model", model);
+
+		// draw chunk
+		chunk_draw(chunk, shader);
+    }
+
+
+    /*
     for (int x = 0; x < WORLD_SIZE_X; x++) {
         for (int y = 0; y < WORLD_SIZE_Y; y++) {
             for (int z = 0; z < WORLD_SIZE_Z; z++) {
@@ -197,4 +261,5 @@ void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
             }
         }
     }
+    */
 }
