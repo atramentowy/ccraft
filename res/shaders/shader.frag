@@ -1,19 +1,18 @@
 #version 330 core 
 
-in vec2 TexCoord;
+in vec2 frag_uv;
+in float frag_light;
 
-out vec4 FragColor;
+out vec4 frag_color;
 
-uniform sampler2D blockTexture;
+uniform sampler2D block_texture;
 
 void main() 
-{ 
-    FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    vec4 texColor = texture(blockTexture, TexCoord);
-
-    if(texColor.a < 0.1)
+{
+    vec4 tex_color = texture(block_texture, frag_uv);
+    float light = clamp(frag_light, 0.0, 1.0);
+    if(tex_color.a < 0.1)
         discard;
-        
-    FragColor = texColor;
-    // FragColor = texture(blockTexture, TexCoord); 
+
+    frag_color = vec4(tex_color.rgb * light, tex_color.a);
 }

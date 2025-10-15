@@ -80,10 +80,10 @@ int game_init(Game* game) {
 	Texture atlas = texture_create(texture_path, GL_TEXTURE_2D);
 	texture_bind(&atlas, 0);
 	free(texture_path);
-	shader_set_int(&myShader, "blockTexture", 0);
+	shader_set_int(&myShader, "block_texture", 0);
 	
 	world_init(&game->world);
-	world_rebuild(&game->world);
+	world_update_mesh(&game->world);
 	player_init(&game->player);
 
     return 0;

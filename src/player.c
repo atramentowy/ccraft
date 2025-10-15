@@ -52,7 +52,7 @@ void player_update(Player* player, Game* game) {
 	glm_vec3_copy(player->entity.position, player->entity.prev_position);
 }
 
-void player_set_block(Game* game, Block block) { // set a block where the player is standing
+void player_set_block(Game* game, BlockType block) { // set a block where the player is standing
 	vec3 origin;
 	glm_vec3_copy(game->player.camera.position, origin);
 
@@ -69,7 +69,7 @@ void player_set_block(Game* game, Block block) { // set a block where the player
 
 // todo: add checking if in worlds bounds
 bool raycast_voxels(World* world, vec3 origin, vec3 direction, float max_distance, 
-		Block* out_block, ivec3* out_coord, ivec3* out_normal) {
+		BlockType* out_block, ivec3* out_coord, ivec3* out_normal) {
 	float LARGE = 1e30f; // A safe large number
 
 	// ray origin -> shift by 0.5 to match voxel-center-based coordinates
@@ -105,11 +105,11 @@ bool raycast_voxels(World* world, vec3 origin, vec3 direction, float max_distanc
 	// calculate
 	float t = 0.0f;
 	while(t <= max_distance) {
-		Block block = world_get_block(world, x, y, z);
+		BlockType block = world_get_block(world, x, y, z);
 		if(block != BLOCK_AIR) { // if block is solid
 			/*
 				printf("Hit voxel at (%d, %d, %d), t = %.2f\n", x, y, z, t);
-				printf("Block bounds: [%.1f, %.1f] x [%.1f, %.1f] x [%.1f, %.1f]\n",
+				printf("BlockType bounds: [%.1f, %.1f] x [%.1f, %.1f] x [%.1f, %.1f]\n",
        				x - 0.5f, x + 0.5f,
        				y - 0.5f, y + 0.5f,
        				z - 0.5f, z + 0.5f				
@@ -178,7 +178,7 @@ void player_place_block(Game* game) {
 	};
 	glm_vec3_normalize(direction);
 
-    Block hit_block;
+    BlockType hit_block;
     ivec3 hit_coord;
     ivec3 hit_normal;
 
@@ -186,7 +186,7 @@ void player_place_block(Game* game) {
     if(raycast_voxels(&game->world, origin, direction, max_dist, 
 				&hit_block, &hit_coord, &hit_normal)) {
 
-		Block selected_block;
+		BlockType selected_block;
         selected_block = game->player.inventory.slots[game->player.selected_slot][0];
 		
 		glm_ivec3_add(hit_normal, hit_coord, hit_coord);
@@ -244,7 +244,7 @@ void player_destroy_block(Game* game) {
 	};
 	glm_vec3_normalize(direction);
 
-    Block hit_block;
+    BlockType hit_block;
     ivec3 hit_coord;
     ivec3 hit_normal;
 
@@ -253,7 +253,7 @@ void player_destroy_block(Game* game) {
 				&hit_block, &hit_coord, &hit_normal)) {
 		// printf("hit!\n");
 
-		Block block = BLOCK_AIR;
+		BlockType block = BLOCK_AIR;
 		if(world_get_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != block) {
 
 			world_set_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2], block);

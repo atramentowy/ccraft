@@ -47,7 +47,7 @@ Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
     return &world->chunks[world_get_chunk_index(nx, ny, nz)];
 }
 
-Block world_get_block(World* world, int x, int y, int z) {
+BlockType world_get_block(World* world, int x, int y, int z) {
 	// Check if the coordinates are inside the world
     if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
         y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
@@ -63,10 +63,10 @@ Block world_get_block(World* world, int x, int y, int z) {
 	int block_z = z % CHUNK_SIZE;
 	
 	Chunk* chunk = &world->chunks[world_get_chunk_index(chunk_x, chunk_y, chunk_z)];
-	return chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)];
+	return chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)].type;
 }
 
-void world_set_block(World* world, int x, int y, int z, Block block) { // idk if it should return value
+void world_set_block(World* world, int x, int y, int z, BlockType block) { // idk if it should return value
     // Check if the coordinates are inside the world
     if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
         y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
@@ -83,7 +83,7 @@ void world_set_block(World* world, int x, int y, int z, Block block) { // idk if
     int block_z = z % CHUNK_SIZE;
 
     Chunk* chunk = &world->chunks[world_get_chunk_index(chunk_x, chunk_y, chunk_z)];
-    chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)] = block;
+    chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)].type = block;
 }
 
 void world_init(World* world) {
@@ -93,16 +93,6 @@ void world_init(World* world) {
     for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
         chunk_init(&world->chunks[i]);
     }
-    /*
-    for (int x = 0; x < WORLD_SIZE_X; x++) {
-        for (int y = 0; y < WORLD_SIZE_Y; y++) {
-            for (int z = 0; z < WORLD_SIZE_Z; z++) {
-                chunk_init(&world->chunks[x][y][z]);
-            }
-        }
-    }
-    */
-
 	world_generate(world);
 }
 
@@ -128,15 +118,15 @@ void world_generate(World* world) {
 		}
 	}
 
-	world_set_block(world, 0, 1, 0, BLOCK_GRASS);
-	world_set_block(world, 0, 2, 0, BLOCK_GRASS);
-	world_set_block(world, 6, 2, 6, BLOCK_GRASS);
+	world_set_block(world, 0, 1, 0, BLOCK_LIGHT);
+	// world_set_block(world, 0, 2, 0, BLOCK_GRASS);
+	// world_set_block(world, 6, 2, 6, BLOCK_GRASS);
 
 	/*
 	int p[512];
 	init_perlin(p);
 
-	const int MAX_HEIGHT = 50;
+	const int MAX_HEIGHT = 2;
 
 	for (int x = 0; x < WORLD_SIZE_X * CHUNK_SIZE; x++) {
         for (int y = 0; y < WORLD_SIZE_Y * CHUNK_SIZE; y++) {
@@ -152,7 +142,7 @@ void world_generate(World* world) {
                 if (y < terrain_height - 3) {
                     block = BLOCK_STONE;
                 } else if (y < terrain_height) {
-                    block = BLOCK_DIRT;
+                    block = BLOCK_STONE;
                 } else if (y == terrain_height) {
                     block = BLOCK_GRASS;
                 } else {
@@ -173,7 +163,7 @@ void world_generate(World* world) {
 	*/
 }
 
-void world_rebuild(World* world) {
+void world_update_mesh(World* world) {
     for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
         if(!world->chunks[i].dirty) continue;
 
@@ -181,18 +171,14 @@ void world_rebuild(World* world) {
         int y = (i / WORLD_SIZE_Z) % WORLD_SIZE_Y;
         int z = i % WORLD_SIZE_Z;
 
-        chunk_rebuild(world, &world->chunks[i], x, y, z);
+        chunk_update_mesh(world, &world->chunks[i], x, y, z);
     }
-    /*
-    for (int x = 0; x < WORLD_SIZE_X; x++) {
-        for (int y = 0; y < WORLD_SIZE_Y; y++) {
-            for (int z = 0; z < WORLD_SIZE_Z; z++) {
-				if (!&world->chunks[x][y][z].dirty) continue;
+}
 
-        		chunk_rebuild(world, &world->chunks[x][y][z], x, y, z);
-            }
-        }
-    }*/
+void world_update_light(World* world) {
+    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+        chunk_update_light(world, &world->chunks[i]);
+    }
 }
 
 void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
@@ -208,7 +194,7 @@ void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
         int z = i % WORLD_SIZE_Z;
         
         // rebuild mesh if dirty
-        if(chunk->dirty) chunk_rebuild(world, chunk, x, y, z);
+        if(chunk->dirty) chunk_update_mesh(world, chunk, x, y, z);
         
         // check if in frustum
 		chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z); // check in frustum

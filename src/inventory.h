@@ -4,7 +4,7 @@
 #include "chunk.h"
 
 typedef struct {
-    Block slots[4][9];
+    BlockType slots[4][9];
 } Inventory;
 
 void inventory_init(Inventory* inv);

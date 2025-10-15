@@ -9,7 +9,7 @@
 
 typedef struct Game Game;
 typedef struct Chunk Chunk;
-typedef enum Block Block;
+typedef enum BlockType BlockType;
 
 typedef struct {
 	Camera camera;
