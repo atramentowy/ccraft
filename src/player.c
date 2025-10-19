@@ -63,8 +63,6 @@ void player_set_block(Game* game, BlockType block) { // set a block where the pl
 	if (world_get_block(&game->world, x, y, z) != block) {
 		world_set_block(&game->world, x, y, z, block);
 	}
-	// printf("Placing at (%d, %d, %d)\n", x, y, z);
-	// printf("Current block: %d\n", world_get_block(world, x, y, z));
 }
 
 // todo: add checking if in worlds bounds
@@ -107,15 +105,6 @@ bool raycast_voxels(World* world, vec3 origin, vec3 direction, float max_distanc
 	while(t <= max_distance) {
 		BlockType block = world_get_block(world, x, y, z);
 		if(block != BLOCK_AIR) { // if block is solid
-			/*
-				printf("Hit voxel at (%d, %d, %d), t = %.2f\n", x, y, z, t);
-				printf("BlockType bounds: [%.1f, %.1f] x [%.1f, %.1f] x [%.1f, %.1f]\n",
-       				x - 0.5f, x + 0.5f,
-       				y - 0.5f, y + 0.5f,
-       				z - 0.5f, z + 0.5f				
-				);
-			*/
-
 			(*out_coord)[0] = x;
 			(*out_coord)[1] = y;
 			(*out_coord)[2] = z;
@@ -258,8 +247,6 @@ void player_destroy_block(Game* game) {
 
 			world_set_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2], block);
 
-           	// world_rebuild(&game->world);
-
             ivec3 chunk_coord = {
                 hit_coord[0] / CHUNK_SIZE,
                 hit_coord[1] / CHUNK_SIZE,
@@ -290,9 +277,6 @@ void player_destroy_block(Game* game) {
             }
 
             game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1], chunk_coord[2])].dirty = true;
-
-			// printf("Destroying at (%d, %d, %d)\n", x, y, z);
-			// printf("Current block: %d\n", world_get_block(world, x, y, z));
 		}
 	}
 	fflush(stdout);

@@ -38,4 +38,3 @@ target_link_libraries(
     PRIVATE cglm
     PRIVATE OpenGL::GL
 )
-

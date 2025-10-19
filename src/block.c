@@ -10,14 +10,15 @@ bool block_is_transparent(BlockType type) {
         case BLOCK_STONE:
             return false;
     }
+    return false;
 }
 
 bool block_is_opaque(BlockType type) {
     if(type == BLOCK_AIR) return true;
-    else return false;
+    return false;
 }
 
 uint8_t block_get_emission(BlockType type) {
     if (BLOCK_LIGHT) return 15;
-    else return 0;
+    return 0;
 }

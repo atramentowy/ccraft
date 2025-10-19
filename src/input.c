@@ -66,7 +66,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             game->debug_backface_culling = !game->debug_backface_culling;
         } else if(key == GLFW_KEY_F3) {
             world_update_light(&game->world);
-            
         } else if(key == GLFW_KEY_1) {
             game->player.selected_slot = 0;
         } else if(key == GLFW_KEY_2) {

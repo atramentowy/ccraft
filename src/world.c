@@ -9,31 +9,31 @@ int world_get_chunk_index(int x, int y, int z) {
     return x * WORLD_SIZE_X * WORLD_SIZE_Y + y * WORLD_SIZE_Z + z;
 }
 
+int offset_x(Direction dir) {
+    switch (dir) {
+        case DIR_POS_X: return 1;
+        case DIR_NEG_X: return -1;
+        default: return 0;
+    }
+}
+
+int offset_y(Direction dir) {
+    switch (dir) {
+        case DIR_POS_Y: return 1;
+        case DIR_NEG_Y: return -1;
+        default: return 0;
+    }
+}
+
+int offset_z(Direction dir) {
+    switch (dir) {
+        case DIR_POS_Z: return 1;
+        case DIR_NEG_Z: return -1;
+        default: return 0;
+    }
+}
+
 Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
-	int offset_x(Direction dir) {
-        switch (dir) {
-            case DIR_POS_X: return 1;
-            case DIR_NEG_X: return -1;
-            default: return 0;
-        }
-    }
-
-    int offset_y(Direction dir) {
-        switch (dir) {
-            case DIR_POS_Y: return 1;
-            case DIR_NEG_Y: return -1;
-            default: return 0;
-        }
-    }
-
-    int offset_z(Direction dir) {
-        switch (dir) {
-            case DIR_POS_Z: return 1;
-            case DIR_NEG_Z: return -1;
-            default: return 0;
-        }
-    }
-
     int nx = x + offset_x(dir);
     int ny = y + offset_y(dir);
     int nz = z + offset_z(dir);

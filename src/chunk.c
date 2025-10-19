@@ -139,9 +139,6 @@ void chunk_init(Chunk* chunk) {
 }
 
 void chunk_unload(Chunk* chunk) {
-    // Free dynamically allocated block data
-    // free(chunk->blocks);
-
     if (chunk->vao)
         glDeleteVertexArrays(1, &chunk->vao);
     if (chunk->vbo)
@@ -154,6 +151,7 @@ void chunk_unload(Chunk* chunk) {
     chunk->ebo = 0;
 
     // Free dynamically allocated mesh data
+    free(chunk->blocks);
     free(chunk->vertices);
     free(chunk->indices);
 }
@@ -181,193 +179,120 @@ void chunk_update_mesh(World* world, Chunk* chunk, int cx, int cy, int cz) {
             	if (bt == BLOCK_AIR) continue;
 
             	vec3 posf = { (float)x, (float)y, (float)z };
-				/*
-				// +X
-           		if (x == CHUNK_SIZE - 1) {
-                	BlockType nb = neighbors[DIR_POS_X] 
-                        ? neighbors[DIR_POS_X]->blocks[chunk_get_block_index(0, y, z)].type : 0;
-                	if(nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_POS_X, bt, light_level);
-            	} else {
-                    BlockType nb = chunk->blocks[chunk_get_block_index(x+1, y, z)].type;
-                    if(nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_POS_X, bt, light_level);
-            	}
 
-            	// -X
-            	if (x == 0) {
-                	BlockType nb = neighbors[DIR_NEG_X] 
-                        ? neighbors[DIR_NEG_X]->blocks[chunk_get_block_index(CHUNK_SIZE-1, y, z)].type : 0;
-                	if (nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_NEG_X, bt, light_level);
-            	} else {
-                    BlockType nb = chunk->blocks[chunk_get_block_index(x-1, y, z)].type;
-                    if(nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_NEG_X, bt, light_level);
-            	}
+                // +X
+                if (x == CHUNK_SIZE - 1) {
+                    Block *neighbor = neighbors[DIR_POS_X]
+                        ? &neighbors[DIR_POS_X]->blocks[chunk_get_block_index(0, y, z)]
+                        : NULL;
+                    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
+                    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
 
-            	// +Y
-            	if (y == CHUNK_SIZE - 1) {
-                	BlockType nb = neighbors[DIR_POS_Y] 
-                        ? neighbors[DIR_POS_Y]->blocks[chunk_get_block_index(x, 0, z)].type : 0;
-                	if (nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_POS_Y, bt, light_level);
-            	} else {
-                    BlockType nb = chunk->blocks[chunk_get_block_index(x, y+1, z)].type;
-                    if(nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_POS_Y, bt, light_level);
-            	}
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_X, bt, neighbor_light);
+                } else {
+                    Block *neighbor = &chunk->blocks[chunk_get_block_index(x + 1, y, z)];
+                    BlockType nb = neighbor->type;
+                    uint8_t neighbor_light = neighbor->light_level;
 
-            	// -Y
-            	if (y == 0) {
-                	BlockType nb = neighbors[DIR_NEG_Y] 
-                        ? neighbors[DIR_NEG_Y]->blocks[chunk_get_block_index(x, CHUNK_SIZE-1, z)].type : 0;
-                	if (nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_NEG_Y, bt, light_level);
-            	} else {
-                    BlockType nb = chunk->blocks[chunk_get_block_index(x, y-1, z)].type;
-                    if(nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_NEG_Y, bt, light_level);
-            	}
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_X, bt, neighbor_light);
+                }
 
-            	// +Z
-            	if (z == CHUNK_SIZE - 1) {
-                	BlockType nb = neighbors[DIR_POS_Z] 
-                        ? neighbors[DIR_POS_Z]->blocks[chunk_get_block_index(x, y, 0)].type : 0;
-                	if (nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_POS_Z, bt, light_level);
-            	} else {
-                    BlockType nb = chunk->blocks[chunk_get_block_index(x, y, z+1)].type;
-                	if(nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_POS_Z, bt, light_level);
-            	}
+                // -X
+                if (x == 0) {
+                    Block *neighbor = neighbors[DIR_NEG_X]
+                        ? &neighbors[DIR_NEG_X]->blocks[chunk_get_block_index(CHUNK_SIZE - 1, y, z)]
+                        : NULL;
+                    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
+                    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
 
-            	// -Z
-            	if (z == 0) {
-                	BlockType nb = neighbors[DIR_NEG_Z] 
-                        ? neighbors[DIR_NEG_Z]->blocks[chunk_get_block_index(x, y, CHUNK_SIZE-1)].type : 0;
-                	if (nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_NEG_Z, bt, light_level);
-            	} else {
-                    BlockType nb = chunk->blocks[chunk_get_block_index(x, y, z-1)].type;
-                    if(nb == BLOCK_AIR || nb != bt)
-                        add_face(chunk, posf, DIR_NEG_Z, bt, light_level);
-            	}*/
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_X, bt, neighbor_light);
+                } else {
+                    Block *neighbor = &chunk->blocks[chunk_get_block_index(x - 1, y, z)];
+                    BlockType nb = neighbor->type;
+                    uint8_t neighbor_light = neighbor->light_level;
 
-// +X
-if (x == CHUNK_SIZE - 1) {
-    Block *neighbor = neighbors[DIR_POS_X]
-        ? &neighbors[DIR_POS_X]->blocks[chunk_get_block_index(0, y, z)]
-        : NULL;
-    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
-    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_X, bt, neighbor_light);
+                }
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_POS_X, bt, neighbor_light);
-} else {
-    Block *neighbor = &chunk->blocks[chunk_get_block_index(x + 1, y, z)];
-    BlockType nb = neighbor->type;
-    uint8_t neighbor_light = neighbor->light_level;
+                // +Y
+                if (y == CHUNK_SIZE - 1) {
+                    Block *neighbor = neighbors[DIR_POS_Y]
+                        ? &neighbors[DIR_POS_Y]->blocks[chunk_get_block_index(x, 0, z)]
+                        : NULL;
+                    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
+                    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_POS_X, bt, neighbor_light);
-}
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Y, bt, neighbor_light);
+                } else {
+                    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y + 1, z)];
+                    BlockType nb = neighbor->type;
+                    uint8_t neighbor_light = neighbor->light_level;
 
-// -X
-if (x == 0) {
-    Block *neighbor = neighbors[DIR_NEG_X]
-        ? &neighbors[DIR_NEG_X]->blocks[chunk_get_block_index(CHUNK_SIZE - 1, y, z)]
-        : NULL;
-    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
-    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Y, bt, neighbor_light);
+                }
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_NEG_X, bt, neighbor_light);
-} else {
-    Block *neighbor = &chunk->blocks[chunk_get_block_index(x - 1, y, z)];
-    BlockType nb = neighbor->type;
-    uint8_t neighbor_light = neighbor->light_level;
+                // -Y
+                if (y == 0) {
+                    Block *neighbor = neighbors[DIR_NEG_Y]
+                        ? &neighbors[DIR_NEG_Y]->blocks[chunk_get_block_index(x, CHUNK_SIZE - 1, z)]
+                        : NULL;
+                    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
+                    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_NEG_X, bt, neighbor_light);
-}
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Y, bt, neighbor_light);
+                } else {
+                    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y - 1, z)];
+                    BlockType nb = neighbor->type;
+                    uint8_t neighbor_light = neighbor->light_level;
 
-// +Y
-if (y == CHUNK_SIZE - 1) {
-    Block *neighbor = neighbors[DIR_POS_Y]
-        ? &neighbors[DIR_POS_Y]->blocks[chunk_get_block_index(x, 0, z)]
-        : NULL;
-    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
-    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Y, bt, neighbor_light);
+                }
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_POS_Y, bt, neighbor_light);
-} else {
-    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y + 1, z)];
-    BlockType nb = neighbor->type;
-    uint8_t neighbor_light = neighbor->light_level;
+                // +Z
+                if (z == CHUNK_SIZE - 1) {
+                    Block *neighbor = neighbors[DIR_POS_Z]
+                        ? &neighbors[DIR_POS_Z]->blocks[chunk_get_block_index(x, y, 0)]
+                        : NULL;
+                    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
+                    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_POS_Y, bt, neighbor_light);
-}
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Z, bt, neighbor_light);
+                } else {
+                    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y, z + 1)];
+                    BlockType nb = neighbor->type;
+                    uint8_t neighbor_light = neighbor->light_level;
 
-// -Y
-if (y == 0) {
-    Block *neighbor = neighbors[DIR_NEG_Y]
-        ? &neighbors[DIR_NEG_Y]->blocks[chunk_get_block_index(x, CHUNK_SIZE - 1, z)]
-        : NULL;
-    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
-    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_POS_Z, bt, neighbor_light);
+                }
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_NEG_Y, bt, neighbor_light);
-} else {
-    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y - 1, z)];
-    BlockType nb = neighbor->type;
-    uint8_t neighbor_light = neighbor->light_level;
+                // -Z
+                if (z == 0) {
+                    Block *neighbor = neighbors[DIR_NEG_Z]
+                        ? &neighbors[DIR_NEG_Z]->blocks[chunk_get_block_index(x, y, CHUNK_SIZE - 1)]
+                        : NULL;
+                    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
+                    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
 
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_NEG_Y, bt, neighbor_light);
-}
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Z, bt, neighbor_light);
+                } else {
+                    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y, z - 1)];
+                    BlockType nb = neighbor->type;
+                    uint8_t neighbor_light = neighbor->light_level;
 
-// +Z
-if (z == CHUNK_SIZE - 1) {
-    Block *neighbor = neighbors[DIR_POS_Z]
-        ? &neighbors[DIR_POS_Z]->blocks[chunk_get_block_index(x, y, 0)]
-        : NULL;
-    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
-    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
-
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_POS_Z, bt, neighbor_light);
-} else {
-    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y, z + 1)];
-    BlockType nb = neighbor->type;
-    uint8_t neighbor_light = neighbor->light_level;
-
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_POS_Z, bt, neighbor_light);
-}
-
-// -Z
-if (z == 0) {
-    Block *neighbor = neighbors[DIR_NEG_Z]
-        ? &neighbors[DIR_NEG_Z]->blocks[chunk_get_block_index(x, y, CHUNK_SIZE - 1)]
-        : NULL;
-    BlockType nb = neighbor ? neighbor->type : BLOCK_AIR;
-    uint8_t neighbor_light = neighbor ? neighbor->light_level : 0;
-
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_NEG_Z, bt, neighbor_light);
-} else {
-    Block *neighbor = &chunk->blocks[chunk_get_block_index(x, y, z - 1)];
-    BlockType nb = neighbor->type;
-    uint8_t neighbor_light = neighbor->light_level;
-
-    if (nb == BLOCK_AIR || nb != bt)
-        add_face(chunk, posf, DIR_NEG_Z, bt, neighbor_light);
-}
-                
+                    if (nb == BLOCK_AIR || nb != bt)
+                        add_face(chunk, posf, DIR_NEG_Z, bt, neighbor_light);
+                }
         	}
 		}
     }

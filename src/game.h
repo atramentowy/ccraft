@@ -25,8 +25,6 @@ typedef struct Game {
 	bool first_mouse;
 					  
 	Shader shader; // block shader
-	Entity entity; // test entity
-
 	RenderContext ctx;
 	World world;
 	Player player;

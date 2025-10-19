@@ -1,6 +1,5 @@
-#include "game.h"
-
 #include "filepath.h"
+#include "game.h"
 #include "texture.h"
 
 int game_init(Game* game) {
@@ -10,12 +9,9 @@ int game_init(Game* game) {
 	game->last_x = game->window_width / 2.0f;
 	game->last_y = game->window_height / 2.0f;
 	game->first_mouse = true;
-	
-	// physics
-	game->accumulator = 0.0f;
-
-    game->debug_wireframe_mode = false;
-    game->debug_backface_culling = true;
+	game->accumulator = 0.0f; // physics
+    game->debug_wireframe_mode = false; // debug
+    game->debug_backface_culling = true; // debug
 
 	// init glfw
 	if(!glfwInit()) {
@@ -27,7 +23,6 @@ int game_init(Game* game) {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     // glfwWindowHint(GLFW_SAMPLES, 16); // 4x MSAA // does not work for voxels
-
 
 	game->window = glfwCreateWindow(game->window_width, game->window_height, "ccraft", NULL, NULL);
 	if(!game->window) {
@@ -55,14 +50,11 @@ int game_init(Game* game) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
     // glEnable(GL_BLEND);
-	
 	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //
+
 	// shaders
     char* vert_path = make_path("res/shaders/shader.vert");
 	char* frag_path = make_path("res/shaders/shader.frag");
-	path_make_absolute(vert_path, "res/shaders/shader.vert");
-	path_make_absolute(frag_path, "res/shaders/shader.frag");
 
 	Shader myShader = shader_create(
 		vert_path,
@@ -71,15 +63,10 @@ int game_init(Game* game) {
 	shader_use(&myShader);
 	game->shader = myShader;
 
-	free(vert_path);
-	free(frag_path);
-
 	// textures atlas
 	char* texture_path = make_path("res/textures.png");
-	path_make_absolute(texture_path, "res/textures.png");
 	Texture atlas = texture_create(texture_path, GL_TEXTURE_2D);
 	texture_bind(&atlas, 0);
-	free(texture_path);
 	shader_set_int(&myShader, "block_texture", 0);
 	
 	world_init(&game->world);

@@ -29,19 +29,17 @@ char* get_self_directory(void) {
 char* get_self_directory(void) {
     char exe_path[1024];
     DWORD path_length = GetModuleFileNameA(NULL, exe_path, sizeof(exe_path) - 1);
-    if (path_length == 0)
-        return NULL;char* make_path(const char* relative_path) {
-    char* absolute = malloc(PATH_MAX);
-    if (!absolute) return NULL;
-    path_make_absolute(absolute, relative_path);
-    return absolute;
-}
+    if (path_length == 0) return NULL;
 
     exe_path[path_length] = '\0';
 
     char* last_backslash = strrchr(exe_path, '\\');
     if (last_backslash)
         *last_backslash = '\0';
+
+    // Remove 'build' folder
+    char* second_backslash = strrchr(exe_path, '\\');
+    if (second_backslash) *second_backslash = '\0';
 
     return _strdup(exe_path);
 }
@@ -75,7 +73,7 @@ char* get_parent_directory(const char* path) {
 
 int path_make_absolute(char* out_path, const char* relative_path) {
 	if (!out_path || !relative_path) {
-        fprintf(stderr, "FILEPATH ERROR: relative_path or out_pathpath is NULL\n");
+        fprintf(stderr, "FILEPATH ERROR: relative_path or out_path is NULL\n");
         return -1;
     }
 
@@ -86,7 +84,15 @@ int path_make_absolute(char* out_path, const char* relative_path) {
     if (!base) return -1;
 
 #if defined(_WIN32)
-    snprintf(out_path, 1024, "%s\\%s", base, relative_path);
+    char temp[1024];
+    strncpy(temp, relative_path, sizeof(temp) - 1);
+    temp[sizeof(temp) - 1] = '\0';
+
+    for (int i = 0; temp[i]; i++) {
+        if (temp[i] == '/') temp[i] = '\\';
+    }
+
+    snprintf(out_path, 1024, "%s\\%s", base, temp);
 #else
     snprintf(out_path, 1024, "%s/%s", base, relative_path);
 #endif
@@ -104,4 +110,3 @@ char* make_path(char* path) {
 }
 
 #endif // FILEPATH_H
-
