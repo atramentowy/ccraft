@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <cglm/cglm.h>
 
 typedef enum BlockType {
     BLOCK_AIR = 0,
@@ -19,6 +20,7 @@ typedef struct Block {
 
 bool block_is_transparent(BlockType type);
 bool block_is_opaque(BlockType type);
+bool block_in_chunk(ivec3 pos);
 uint8_t block_get_emission(BlockType type);
 
 #endif

@@ -87,10 +87,10 @@ void world_set_block(World* world, int x, int y, int z, BlockType block) { // id
 }
 
 void world_init(World* world) {
-    world->chunks = malloc(WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z * sizeof(Chunk));
-    memset(world->chunks, 0, WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z * sizeof(Chunk));
+    world->chunks = malloc(MAX_WORLD_SIZE * sizeof(Chunk));
+    memset(world->chunks, 0, MAX_WORLD_SIZE * sizeof(Chunk));
 
-    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+    for(int i = 0; i < MAX_WORLD_SIZE; i++) {
         chunk_init(&world->chunks[i]);
     }
 	world_generate(world);
@@ -99,7 +99,7 @@ void world_init(World* world) {
 void world_unload(World* world) {
     if (!world || !world->chunks) return;
 
-    int chunk_count = WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z;
+    int chunk_count = MAX_WORLD_SIZE;
 
     for (int i = 0; i < chunk_count; i++) {
         chunk_unload(&world->chunks[i]);
@@ -118,7 +118,7 @@ void world_generate(World* world) {
 		}
 	}
 
-	world_set_block(world, 0, 1, 0, BLOCK_LIGHT);
+	// world_set_block(world, 0, 1, 0, BLOCK_LIGHT);
 	// world_set_block(world, 0, 2, 0, BLOCK_GRASS);
 	// world_set_block(world, 6, 2, 6, BLOCK_GRASS);
 
@@ -164,7 +164,7 @@ void world_generate(World* world) {
 }
 
 void world_update_mesh(World* world) {
-    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+    for(int i = 0; i < MAX_WORLD_SIZE; i++) {
         if(!world->chunks[i].dirty) continue;
 
         int x = i / (WORLD_SIZE_Y * WORLD_SIZE_Z);
@@ -177,7 +177,7 @@ void world_update_mesh(World* world) {
 
 void world_update_light(World* world) {
     for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
-        chunk_update_light(world, &world->chunks[i]);
+        // chunk_update_light(world, &world->chunks[i]);
     }
 }
 
@@ -186,7 +186,7 @@ void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
 	shader_set_mat4(shader, "projection", ctx->projection);
 	shader_set_mat4(shader, "view", ctx->view);
 	
-    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
+    for(int i = 0; i < MAX_WORLD_SIZE; i++) {
         Chunk* chunk = &world->chunks[i];
         
         int x = i / (WORLD_SIZE_Y * WORLD_SIZE_Z);

@@ -7,7 +7,7 @@
 #define WORLD_SIZE_X 10
 #define WORLD_SIZE_Y 10
 #define WORLD_SIZE_Z 10
-#define WORLD_SIZE (WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z)
+#define MAX_WORLD_SIZE (WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z)
 
 typedef struct World {
     Chunk* chunks;

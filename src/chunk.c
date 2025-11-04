@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type, uint8_t light_level) {
+void add_face(Chunk* chunk, vec3 pos, int face, BlockType block_type, uint8_t light_level) {
     const float tile_size = 1.0f / 16.0f; // 16x16 tiles
     const float epsilon = 0.001f;
 
@@ -15,7 +15,6 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type, uint
 
     tile_y = 15 - tile_y;
 
-    // Base UV (bottom-left of tile)
     vec2 base_uv = {
         tile_x * tile_size + epsilon,
         tile_y * tile_size + epsilon
@@ -30,17 +29,46 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type, uint
 
     vec3 face_offsets[6][4] = {
         // +X
-        {{0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}},
+        {
+            {0.5f,  0.5f, -0.5f},
+            {0.5f,  0.5f,  0.5f},
+            {0.5f, -0.5f,  0.5f},
+            {0.5f, -0.5f, -0.5f}
+        },
         // -X
-        {{-0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, 0.5f}},
+        {
+            {-0.5f,  0.5f,  0.5f},
+            {-0.5f,  0.5f, -0.5f},
+            {-0.5f, -0.5f, -0.5f},
+            {-0.5f, -0.5f,  0.5f}
+        },
         // +Y
-        {{0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}},
+        {
+            { 0.5f, 0.5f, -0.5f},
+            {-0.5f, 0.5f, -0.5f},
+            {-0.5f, 0.5f,  0.5f},
+            { 0.5f, 0.5f,  0.5f}},
         // -Y
-        {{-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}},
+        {
+            {-0.5f, -0.5f, -0.5f},
+            { 0.5f, -0.5f, -0.5f},
+            { 0.5f, -0.5f,  0.5f},
+            {-0.5f, -0.5f,  0.5f}
+        },
         // +Z
-        {{0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}},
+        {
+            { 0.5f,  0.5f, 0.5f},
+            {-0.5f,  0.5f, 0.5f},
+            {-0.5f, -0.5f, 0.5f},
+            { 0.5f, -0.5f, 0.5f}
+        },
         // -Z
-        {{-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}}
+        {
+            {-0.5f,  0.5f, -0.5f},
+            { 0.5f,  0.5f, -0.5f},
+            { 0.5f, -0.5f, -0.5f},
+            {-0.5f, -0.5f, -0.5f}
+        }
     };
 
     // Reallocate vertex buffer
@@ -56,7 +84,7 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type, uint
     for (int i = 0; i < 4; ++i) {
         Vertex v;
         glm_vec3_copy(face_offsets[face][i], v.position);
-        glm_vec3_add(v.position, block_pos, v.position);
+        glm_vec3_add(v.position, pos, v.position);
 
         glm_vec2_add(base_uv, uv_offsets[i], v.uv);
 
@@ -75,7 +103,6 @@ void add_face(Chunk* chunk, vec3 block_pos, int face, BlockType block_type, uint
 
     unsigned int base = chunk->vertex_count - 4;
 
-    // Add 2 triangles (quad)
     chunk->indices[chunk->index_count++] = base;
     chunk->indices[chunk->index_count++] = base + 1;
     chunk->indices[chunk->index_count++] = base + 2;
@@ -112,23 +139,26 @@ void chunk_set_block(Chunk* chunk, int x, int y, int z, BlockType block) {
 }
 
 void chunk_init(Chunk* chunk) {
-	chunk->blocks = malloc(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
-	// memset(chunk->blocks, 0, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Block));
-    for(int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE; i++) {
+	chunk->blocks = malloc(MAX_CHUNK_SIZE * sizeof(Block));
+	// memset(chunk->blocks, 0, MAX_CHUNK_SIZE * sizeof(Block));
+    
+    for(int i = 0; i < MAX_CHUNK_SIZE; i++) {
         chunk->blocks[i].type = BLOCK_AIR;
         chunk->blocks[i].light_level = 0;
     }
 
-	// chunk->blocks[chunk_get_block_index(0, 0, 0)] = BLOCK_GRASS;
+    chunk->blocks[chunk_get_block_index(0, 1, 0)].type = BLOCK_LIGHT;
+    
+    lightqueue_init(&chunk->light_queue);
+    // lightqueue_init(&chunk->border_light_queue);
 
-	chunk->vertices = NULL;
-	chunk->indices = NULL;
-	chunk->vertex_count = 0;
-	chunk->index_count = 0;
-
-    chunk->q_front = 0;
-    chunk->q_back = 0;
+    // lightqueue_push(&chunk->light_queue, (LightNode){0, 1, 0, 15});
 	
+    chunk->vertices = NULL;
+    chunk->indices = NULL;
+    chunk->vertex_count = 0;
+    chunk->index_count = 0;
+
 	chunk->vao = chunk->vbo = chunk->ebo = 0;
 	glGenVertexArrays(1, &chunk->vao);
     glGenBuffers(1, &chunk->vbo);
@@ -150,7 +180,6 @@ void chunk_unload(Chunk* chunk) {
     chunk->vbo = 0;
     chunk->ebo = 0;
 
-    // Free dynamically allocated mesh data
     free(chunk->blocks);
     free(chunk->vertices);
     free(chunk->indices);
@@ -317,41 +346,8 @@ void chunk_update_mesh(World* world, Chunk* chunk, int cx, int cy, int cz) {
 	chunk->dirty = false;
 }
 
-void enqueue(Chunk* chunk, LightNode node) {
-    int next_back = (chunk->q_back + 1) % MAX_QUEUE;
-    if (next_back != chunk->q_front) {
-        chunk->queue[chunk->q_back] = node;
-        chunk->q_back = next_back;
-    } else {
-        fprintf(stderr, "Light queue overflow in chunk!\n");
-    }
-}
-
-bool queue_empty(Chunk* chunk) {
-    return chunk->q_front == chunk->q_back;
-}
-
-LightNode dequeue(Chunk* chunk) {
-    LightNode node = chunk->queue[chunk->q_front];
-    chunk->q_front = (chunk->q_front + 1) % MAX_QUEUE;
-    return node;
-}
-
-bool in_bounds(int x, int y, int z) {
-    return (x >= 0 && x < CHUNK_SIZE &&
-            y >= 0 && y < CHUNK_SIZE &&
-            z >= 0 && z < CHUNK_SIZE);
-}
-
 void chunk_update_light(World* world, Chunk* chunk) {
-    chunk->q_front = 0;
-    chunk->q_back = 0;
-
-    const int dx[DIR_COUNT] = { 1, -1,  0,  0,  0,  0 };
-    const int dy[DIR_COUNT] = { 0,  0,  1, -1,  0,  0 };
-    const int dz[DIR_COUNT] = { 0,  0,  0,  0,  1, -1 };
-
-    // Reset all light and enqueue light sources
+    // seed light
     for (int x = CHUNK_SIZE - 1; x >= 0; x--) {
         for (int y = CHUNK_SIZE - 1; y >= 0; y--) {
             for (int z = CHUNK_SIZE - 1; z >= 0; z--) {
@@ -361,35 +357,41 @@ void chunk_update_light(World* world, Chunk* chunk) {
 
                 if (block->type == BLOCK_LIGHT) {
                     uint8_t emission = block_get_emission(block->type);
-                    block->light_level = emission;
-                    // block->light_level = 15;
-                    enqueue(chunk, (LightNode){x, y, z, emission});
+                    block->light_level = emission;                    
+                    lightqueue_push(&chunk->light_queue, (LightNode){x, y, z, emission});
                 }
             }
         }
     }
+    
+    // light propagation
+    while (!lightqueue_empty(&chunk->light_queue)) {
+        const int dx[DIR_COUNT] = { 1, -1,  0,  0,  0,  0 };
+        const int dy[DIR_COUNT] = { 0,  0,  1, -1,  0,  0 };
+        const int dz[DIR_COUNT] = { 0,  0,  0,  0,  1, -1 };
 
-    // Light propagation
-    while (!queue_empty(chunk)) {
-        LightNode node = dequeue(chunk);
+        LightNode node = lightqueue_pop(&chunk->light_queue);
 
         for (Direction dir = 0; dir < DIR_COUNT; dir++) {
             int nx = node.x + dx[dir];
             int ny = node.y + dy[dir];
-            int nz = node.z + dz[dir];
+            int nz = node.z + dz[dir]; 
 
-            if (!in_bounds(nx, ny, nz)) continue;
+            if (!block_in_chunk((ivec3){nx, ny, nz})) {
+                // list push border lights continue;
+                ;
+            } else {
+                Block* neighbor = &chunk->blocks[chunk_get_block_index(nx, ny, nz)];
 
-            Block* neighbor = &chunk->blocks[chunk_get_block_index(nx, ny, nz)];
+                if (!block_is_transparent(neighbor->type)) {
+                    neighbor->light_level = 0;
+                    continue; // stop light at solid blocks
+                }
 
-            if (!block_is_transparent(neighbor->type)) {
-                neighbor->light_level = 0;
-                continue; // stop light at solid blocks
-            }
-
-            if (neighbor->light_level < node.light - 1 && node.light > 1) {
-                neighbor->light_level = node.light - 1;
-                enqueue(chunk, (LightNode){nx, ny, nz, neighbor->light_level});
+                if (neighbor->light_level < node.light - 1 && node.light > 1) {
+                    neighbor->light_level = node.light - 1;
+                    lightqueue_push(&chunk->light_queue, (LightNode){nx, ny, nz, neighbor->light_level});
+                }
             }
         }
     }
@@ -400,3 +402,4 @@ void chunk_draw(const Chunk* chunk, Shader* shader) {
 	glDrawElements(GL_TRIANGLES, (GLsizei)chunk->index_count, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
+

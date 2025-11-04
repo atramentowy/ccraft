@@ -91,6 +91,9 @@ void game_run(Game* game) {
 		glfwPollEvents();
 		process_input(game->window);
 
+        // light update
+        world_update_light(&game->world);
+
 		// process physics
 		while (game->accumulator >= PHYSICS_TIMESTEP) {
 			// entity_update(&game->world, &game->entity, PHYSICS_TIMESTEP);

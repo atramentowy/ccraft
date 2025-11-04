@@ -7,11 +7,12 @@
 
 #include "block.h"
 #include "shader.h"
+#include "light_queue.h"
 
 typedef struct World World;
 
 #define CHUNK_SIZE 16
-#define MAX_QUEUE (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
+#define MAX_CHUNK_SIZE (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
 
 typedef enum {
 	DIR_POS_X = 0,	// +X
@@ -29,11 +30,6 @@ typedef struct {
     float light;
 } Vertex;
 
-typedef struct {
-    int x, y, z;
-    uint8_t light;
-} LightNode;
-
 typedef struct Chunk {
 	Block* blocks;
 
@@ -42,8 +38,8 @@ typedef struct Chunk {
 	size_t vertex_count;
 	size_t index_count;
 
-    LightNode queue[MAX_QUEUE];
-    int q_front, q_back;
+    LightQueue light_queue;
+    // LightQueue border_light_queue;
 
 	GLuint vao;
 	GLuint vbo;
@@ -54,7 +50,6 @@ typedef struct Chunk {
 } Chunk;
 
 int chunk_get_block_index(int x, int y, int z);
-
 BlockType chunk_get_block(Chunk* chunk, int x, int y, int z);
 void chunk_set_block(Chunk* chunk, int x, int y, int z, BlockType block);
 
