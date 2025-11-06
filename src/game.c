@@ -70,9 +70,9 @@ int game_init(Game* game) {
 	shader_set_int(&myShader, "block_texture", 0);
 	
 	world_init(&game->world);
+    world_update_light(&game->world);
 	world_update_mesh(&game->world);
 	player_init(&game->player);
-
     return 0;
 }
 

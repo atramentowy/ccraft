@@ -47,6 +47,11 @@ Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
     return &world->chunks[world_get_chunk_index(nx, ny, nz)];
 }
 
+Chunk* world_get_chunk(World* world, int x, int y, int z) {
+    if (x < 0 || y < 0 || z < 0 || x >= WORLD_SIZE_X || y >= WORLD_SIZE_Y || z >= WORLD_SIZE_Z) return NULL;
+    return &world->chunks[world_get_chunk_index(x, y, z)];
+}
+
 BlockType world_get_block(World* world, int x, int y, int z) {
 	// Check if the coordinates are inside the world
     if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
@@ -91,7 +96,7 @@ void world_init(World* world) {
     memset(world->chunks, 0, MAX_WORLD_SIZE * sizeof(Chunk));
 
     for(int i = 0; i < MAX_WORLD_SIZE; i++) {
-        chunk_init(&world->chunks[i]);
+        chunk_init(&world->chunks[i], i);
     }
 	world_generate(world);
 }
@@ -176,9 +181,19 @@ void world_update_mesh(World* world) {
 }
 
 void world_update_light(World* world) {
-    for(int i = 0; i < WORLD_SIZE_X * WORLD_SIZE_Y * WORLD_SIZE_Z; i++) {
-        // chunk_update_light(world, &world->chunks[i]);
-    }
+    bool any_active;
+    do {
+        any_active = false;
+
+        for (int i = 0; i < MAX_WORLD_SIZE; i++) {
+            Chunk* chunk = &world->chunks[i];
+            if (chunk && chunk->active) {
+                chunk->active = false;
+                chunk_update_light(world, chunk, i);
+                any_active = true;
+            }
+        }
+    } while (any_active);
 }
 
 void world_draw(const RenderContext* ctx, World* world, Shader* shader) {

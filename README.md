@@ -6,7 +6,7 @@ clone with submodules:
 ```
 git clone --recurse-submodules <repo-url>
 ```
-then run:
+then build and run:
 
 ```
 sudo apt install build-essential libx11-dev libgl1-mesa-dev libglew-dev

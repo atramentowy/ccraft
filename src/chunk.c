@@ -138,7 +138,7 @@ void chunk_set_block(Chunk* chunk, int x, int y, int z, BlockType block) {
     chunk->blocks[chunk_get_block_index(x, y, z)].type = block;
 }
 
-void chunk_init(Chunk* chunk) {
+void chunk_init(Chunk* chunk, int index) {
 	chunk->blocks = malloc(MAX_CHUNK_SIZE * sizeof(Block));
 	// memset(chunk->blocks, 0, MAX_CHUNK_SIZE * sizeof(Block));
     
@@ -150,7 +150,7 @@ void chunk_init(Chunk* chunk) {
     chunk->blocks[chunk_get_block_index(0, 1, 0)].type = BLOCK_LIGHT;
     
     lightqueue_init(&chunk->light_queue);
-    // lightqueue_init(&chunk->border_light_queue);
+    lightqueue_init(&chunk->border_light_queue);
 
     // lightqueue_push(&chunk->light_queue, (LightNode){0, 1, 0, 15});
 	
@@ -166,6 +166,34 @@ void chunk_init(Chunk* chunk) {
 
 	chunk->dirty = true;
 	chunk->visible = false;
+    chunk->active = true;
+
+    // seed light
+    for (int x = 0; x < CHUNK_SIZE; x++) {
+        for (int y = 0; y < CHUNK_SIZE; y++) {
+            for (int z = 0; z < CHUNK_SIZE; z++) {
+                Block* block = &chunk->blocks[chunk_get_block_index(x, y, z)];
+                if (block->type == BLOCK_LIGHT) {
+                    int ch_x = index % WORLD_SIZE_X;
+                    int ch_y = (index / WORLD_SIZE_X) % WORLD_SIZE_Y;
+                    int ch_z = index / (WORLD_SIZE_X * WORLD_SIZE_Y);
+
+                    uint8_t emission = block_get_emission(block->type);
+                    block->light_level = emission;
+
+                    lightqueue_push(
+                        &chunk->light_queue,
+                        (LightNode){
+                            x + (ch_x * CHUNK_SIZE),
+                            y + (ch_y * CHUNK_SIZE),
+                            z + (ch_z * CHUNK_SIZE),
+                            emission
+                        }
+                    );
+                }
+            }
+        }
+    }
 }
 
 void chunk_unload(Chunk* chunk) {
@@ -185,8 +213,8 @@ void chunk_unload(Chunk* chunk) {
     free(chunk->indices);
 }
 
-void chunk_update_mesh(World* world, Chunk* chunk, int cx, int cy, int cz) {
-    chunk_update_light(world, chunk);
+void chunk_update_mesh(World* world, Chunk* chunk, int ch_x, int ch_y, int ch_z) {
+    // chunk_update_light(world, chunk, (ivec3){ch_x, ch_y, ch_z});
 
 	free(chunk->vertices);
     free(chunk->indices);
@@ -197,7 +225,7 @@ void chunk_update_mesh(World* world, Chunk* chunk, int cx, int cy, int cz) {
 
 	Chunk* neighbors[DIR_COUNT] = {0};
 	for (Direction d = 0; d < DIR_COUNT; ++d) {
-		neighbors[d] = chunk_get_neighbor(world, cx, cy, cz, d);
+		neighbors[d] = chunk_get_neighbor(world, ch_x, ch_y, ch_z, d);
 	}
 
 	for (int x = 0; x < CHUNK_SIZE; ++x) {
@@ -346,51 +374,88 @@ void chunk_update_mesh(World* world, Chunk* chunk, int cx, int cy, int cz) {
 	chunk->dirty = false;
 }
 
-void chunk_update_light(World* world, Chunk* chunk) {
-    // seed light
-    for (int x = CHUNK_SIZE - 1; x >= 0; x--) {
-        for (int y = CHUNK_SIZE - 1; y >= 0; y--) {
-            for (int z = CHUNK_SIZE - 1; z >= 0; z--) {
+void chunk_update_light(World* world, Chunk* chunk, int index) {
+    if (!chunk || !chunk->blocks) return;
 
-                Block* block = &chunk->blocks[chunk_get_block_index(x, y, z)];
-                block->light_level = 0;
+    int ch_x = index % WORLD_SIZE_X;
+    int ch_y = (index / WORLD_SIZE_X) % WORLD_SIZE_Y;
+    int ch_z = index / (WORLD_SIZE_X * WORLD_SIZE_Y);
 
-                if (block->type == BLOCK_LIGHT) {
-                    uint8_t emission = block_get_emission(block->type);
-                    block->light_level = emission;                    
-                    lightqueue_push(&chunk->light_queue, (LightNode){x, y, z, emission});
-                }
-            }
-        }
+    // Process border light queue
+    while (!lightqueue_empty(&chunk->border_light_queue)) {
+        LightNode node = lightqueue_pop(&chunk->border_light_queue);
+        lightqueue_push(&chunk->light_queue, node);
     }
-    
-    // light propagation
-    while (!lightqueue_empty(&chunk->light_queue)) {
-        const int dx[DIR_COUNT] = { 1, -1,  0,  0,  0,  0 };
-        const int dy[DIR_COUNT] = { 0,  0,  1, -1,  0,  0 };
-        const int dz[DIR_COUNT] = { 0,  0,  0,  0,  1, -1 };
 
+    // Light propagation
+    const int dir_x[6] = { 1, -1,  0,  0,  0,  0 };
+    const int dir_y[6] = { 0,  0,  1, -1,  0,  0 };
+    const int dir_z[6] = { 0,  0,  0,  0,  1, -1 };
+
+    while (!lightqueue_empty(&chunk->light_queue)) {
         LightNode node = lightqueue_pop(&chunk->light_queue);
 
-        for (Direction dir = 0; dir < DIR_COUNT; dir++) {
-            int nx = node.x + dx[dir];
-            int ny = node.y + dy[dir];
-            int nz = node.z + dz[dir]; 
+        for (int dir = 0; dir < 6; dir++) {
+            vec3 neighbor_pos = {
+                node.x + dir_x[dir],
+                node.y + dir_y[dir],
+                node.z + dir_z[dir]
+            };
 
-            if (!block_in_chunk((ivec3){nx, ny, nz})) {
-                // list push border lights continue;
-                ;
-            } else {
-                Block* neighbor = &chunk->blocks[chunk_get_block_index(nx, ny, nz)];
+            int ncx = (int)neighbor_pos[0] / CHUNK_SIZE;
+            int ncy = (int)neighbor_pos[1] / CHUNK_SIZE;
+            int ncz = (int)neighbor_pos[2] / CHUNK_SIZE;
+
+            if (ncx == ch_x && ncy == ch_y && ncz == ch_z) {
+                int lx = (int)neighbor_pos[0] % CHUNK_SIZE;
+                int ly = (int)neighbor_pos[1] % CHUNK_SIZE;
+                int lz = (int)neighbor_pos[2] % CHUNK_SIZE;
+
+                if (lx < 0 || ly < 0 || lz < 0 || lx >= CHUNK_SIZE || ly >= CHUNK_SIZE || lz >= CHUNK_SIZE) continue;
+
+                Block* neighbor = &chunk->blocks[chunk_get_block_index(lx, ly, lz)];
 
                 if (!block_is_transparent(neighbor->type)) {
                     neighbor->light_level = 0;
-                    continue; // stop light at solid blocks
+                    continue;
                 }
+                
+                int new_level = node.light -1;
+                if (new_level > 0 && new_level > neighbor->light_level) {
+                    neighbor->light_level = new_level;
+                    lightqueue_push(
+                        &chunk->light_queue, 
+                        (LightNode) {neighbor_pos[0], neighbor_pos[1], neighbor_pos[2], new_level}
+                    );
+                }
+            } else {
+                Chunk* nb_chunk = &world->chunks[world_get_chunk_index(ncx, ncy, ncz)];
 
-                if (neighbor->light_level < node.light - 1 && node.light > 1) {
-                    neighbor->light_level = node.light - 1;
-                    lightqueue_push(&chunk->light_queue, (LightNode){nx, ny, nz, neighbor->light_level});
+                if (ncx < 0 || ncx >= WORLD_SIZE_X ||
+                    ncy < 0 || ncy >= WORLD_SIZE_Y ||
+                    ncz < 0 || ncz >= WORLD_SIZE_Z) continue;
+
+                if (!nb_chunk || !nb_chunk->blocks) continue;
+
+                int lx = ((int)neighbor_pos[0]) % CHUNK_SIZE;
+                int ly = ((int)neighbor_pos[1]) % CHUNK_SIZE;
+                int lz = ((int)neighbor_pos[2]) % CHUNK_SIZE;
+
+                if (lx < 0 || ly < 0 || lz < 0 || lx >= CHUNK_SIZE || ly >= CHUNK_SIZE || lz >= CHUNK_SIZE) continue;
+
+                Block* neighbor = &nb_chunk->blocks[chunk_get_block_index(lx, ly, lz)];
+                if (!block_is_transparent(neighbor->type)) continue;
+
+                // propagate
+                int new_level = node.light -1;
+                if (new_level > 0 && new_level > neighbor->light_level) {
+                    neighbor->light_level = new_level;
+
+                    lightqueue_push(
+                        &nb_chunk->border_light_queue,
+                        (LightNode) {(int)neighbor_pos[0], (int)neighbor_pos[1], (int)neighbor_pos[2], new_level
+                    });
+                    nb_chunk->active = true;
                 }
             }
         }

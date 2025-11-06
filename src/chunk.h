@@ -39,7 +39,7 @@ typedef struct Chunk {
 	size_t index_count;
 
     LightQueue light_queue;
-    // LightQueue border_light_queue;
+    LightQueue border_light_queue;
 
 	GLuint vao;
 	GLuint vbo;
@@ -47,16 +47,17 @@ typedef struct Chunk {
 
 	bool dirty;
 	bool visible;
+    bool active;
 } Chunk;
 
 int chunk_get_block_index(int x, int y, int z);
 BlockType chunk_get_block(Chunk* chunk, int x, int y, int z);
 void chunk_set_block(Chunk* chunk, int x, int y, int z, BlockType block);
 
-void chunk_init(Chunk* chunk);
+void chunk_init(Chunk* chunk, int index);
 void chunk_unload(Chunk* chunk);
 void chunk_update_mesh(World* world, Chunk* chunk, int cx, int cy, int cz); // update mesh
-void chunk_update_light(World* world, Chunk* chunk); // update light
+void chunk_update_light(World* world, Chunk* chunk, int index); // update light
 void chunk_draw(const Chunk* chunk, Shader* shader);
 
 #endif

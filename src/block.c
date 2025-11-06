@@ -20,7 +20,7 @@ bool block_is_opaque(BlockType type) {
     return false;
 }
 
-bool block_in_chunk(ivec3 pos) {
+bool block_in_chunk(ivec3 pos) { // does not check in world coords
     return (
         pos[0] >= 0 && pos[0] < CHUNK_SIZE &&
         pos[1] >= 0 && pos[1] < CHUNK_SIZE &&
