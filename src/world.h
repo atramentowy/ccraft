@@ -14,11 +14,12 @@ typedef struct World {
 } World;
 
 int world_get_chunk_index(int x, int y, int z);
-
-Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir);
 Chunk* world_get_chunk(World* world, int x, int y, int z);
-BlockType world_get_block(World* world, int x, int y, int z);
 void world_set_block(World* world, int x, int y, int z, BlockType block);
+BlockType world_get_block(World* world, int x, int y, int z);
+
+void world_add_block(World* world, int x, int y, int z, BlockType block);
+void world_remove_block(World* world, int x, int y, int z);
 
 void world_init(World* world);
 void world_unload(World* world);

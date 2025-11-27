@@ -93,6 +93,7 @@ void game_run(Game* game) {
 
         // light update
         world_update_light(&game->world);
+        world_update_mesh(&game->world);
 
 		// process physics
 		while (game->accumulator >= PHYSICS_TIMESTEP) {

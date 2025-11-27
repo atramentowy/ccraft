@@ -40,14 +40,17 @@ typedef struct Chunk {
 
     LightQueue light_queue;
     LightQueue border_light_queue;
+    LightQueue remove_light_queue;
+    LightQueue border_remove_light_queue;
 
 	GLuint vao;
 	GLuint vbo;
 	GLuint ebo;
 
 	bool dirty;
+    bool dirty_light;
+    // bool dirty_dark;
 	bool visible;
-    bool active;
 } Chunk;
 
 int chunk_get_block_index(int x, int y, int z);
@@ -56,8 +59,9 @@ void chunk_set_block(Chunk* chunk, int x, int y, int z, BlockType block);
 
 void chunk_init(Chunk* chunk, int index);
 void chunk_unload(Chunk* chunk);
-void chunk_update_mesh(World* world, Chunk* chunk, int cx, int cy, int cz); // update mesh
-void chunk_update_light(World* world, Chunk* chunk, int index); // update light
+void light_remove(World* world, Chunk* chunk, int index, LightQueue* removal_queue); // test
+void chunk_update_light(World* world, Chunk* chunk, int index);
+void chunk_update_mesh(World* world, Chunk* chunk, int index);
 void chunk_draw(const Chunk* chunk, Shader* shader);
 
 #endif

@@ -179,43 +179,8 @@ void player_place_block(Game* game) {
         selected_block = game->player.inventory.slots[game->player.selected_slot][0];
 		
 		glm_ivec3_add(hit_normal, hit_coord, hit_coord);
-		if(world_get_block(&game->world, 
-					hit_coord[0], hit_coord[1], hit_coord[2]) != selected_block) {
-
-			world_set_block(&game->world, 
-					hit_coord[0], hit_coord[1], hit_coord[2], selected_block);
-
-            // world_rebuild(&game->world);
-            ivec3 chunk_coord = {
-                hit_coord[0] / CHUNK_SIZE,
-                hit_coord[1] / CHUNK_SIZE,
-                hit_coord[2] / CHUNK_SIZE
-            };
-
-            ivec3 local_coord = {
-                hit_coord[0] % CHUNK_SIZE,
-                hit_coord[1] % CHUNK_SIZE,
-                hit_coord[2] % CHUNK_SIZE
-            };
-			
-            // check neighbors
-            if(local_coord[0] == 0 && chunk_coord[0] > 0) { // x
-                game->world.chunks[world_get_chunk_index(chunk_coord[0] - 1, chunk_coord[1], chunk_coord[2])].dirty = true;
-            } else if(local_coord[0] == CHUNK_SIZE - 1&& chunk_coord[0] < WORLD_SIZE_X) {
-                game->world.chunks[world_get_chunk_index(chunk_coord[0] + 1, chunk_coord[1], chunk_coord[2])].dirty = true;
-            }
-            if(local_coord[1] == 0 && chunk_coord[0] > 0) { // y
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1] - 1, chunk_coord[2])].dirty = true;
-            } else if(local_coord[1] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1] + 1, chunk_coord[2])].dirty = true;
-            }
-            if(local_coord[2] == 0 && chunk_coord[0] > 0) { // z
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1], chunk_coord[2] - 1)].dirty = true;
-            } else if(local_coord[2] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1], chunk_coord[2] + 1)].dirty = true;
-            }
-
-            game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1], chunk_coord[2])].dirty = true;
+		if(world_get_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != selected_block) {
+            world_add_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2], selected_block);
 		}
 	}
 }
@@ -244,41 +209,8 @@ void player_destroy_block(Game* game) {
 
 		BlockType block = BLOCK_AIR;
 		if(world_get_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]) != block) {
-
-			world_set_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2], block);
-
-            ivec3 chunk_coord = {
-                hit_coord[0] / CHUNK_SIZE,
-                hit_coord[1] / CHUNK_SIZE,
-                hit_coord[2] / CHUNK_SIZE
-            };
-
-            ivec3 local_coord = {
-                hit_coord[0] % CHUNK_SIZE,
-                hit_coord[1] % CHUNK_SIZE,
-                hit_coord[2] % CHUNK_SIZE
-            };
-			
-            // check neighbors
-            if(local_coord[0] == 0 && chunk_coord[0] > 0) { // x
-                game->world.chunks[world_get_chunk_index(chunk_coord[0] - 1, chunk_coord[1], chunk_coord[2])].dirty = true;
-            } else if(local_coord[0] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
-                game->world.chunks[world_get_chunk_index(chunk_coord[0] + 1, chunk_coord[1], chunk_coord[2])].dirty = true;
-            }
-            if(local_coord[1] == 0 && chunk_coord[0] > 0) { // y
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1] - 1, chunk_coord[2])].dirty = true;
-            } else if(local_coord[1] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1] + 1, chunk_coord[2])].dirty = true;
-            }
-            if(local_coord[2] == 0 && chunk_coord[0] > 0) { // z
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1], chunk_coord[2] - 1)].dirty = true;
-            } else if(local_coord[2] == CHUNK_SIZE - 1 && chunk_coord[0] < WORLD_SIZE_X) {
-                game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1], chunk_coord[2] + 1)].dirty = true;
-            }
-
-            game->world.chunks[world_get_chunk_index(chunk_coord[0], chunk_coord[1], chunk_coord[2])].dirty = true;
+            world_remove_block(&game->world, hit_coord[0], hit_coord[1], hit_coord[2]);
 		}
 	}
-	fflush(stdout);
 }
 

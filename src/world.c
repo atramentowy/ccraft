@@ -3,92 +3,138 @@
 #include "perlin.h"
 
 int world_get_chunk_index(int x, int y, int z) {
-    if (x < 0 || x >= WORLD_SIZE_X || y < 0 || y >= WORLD_SIZE_Y || z < 0 || z >= WORLD_SIZE_Z) {
+    if (x < 0 || x >= WORLD_SIZE_X || 
+        y < 0 || y >= WORLD_SIZE_Y ||
+        z < 0 || z >= WORLD_SIZE_Z) {
         return -1;
     }
     return x * WORLD_SIZE_X * WORLD_SIZE_Y + y * WORLD_SIZE_Z + z;
 }
 
-int offset_x(Direction dir) {
-    switch (dir) {
-        case DIR_POS_X: return 1;
-        case DIR_NEG_X: return -1;
-        default: return 0;
-    }
-}
-
-int offset_y(Direction dir) {
-    switch (dir) {
-        case DIR_POS_Y: return 1;
-        case DIR_NEG_Y: return -1;
-        default: return 0;
-    }
-}
-
-int offset_z(Direction dir) {
-    switch (dir) {
-        case DIR_POS_Z: return 1;
-        case DIR_NEG_Z: return -1;
-        default: return 0;
-    }
-}
-
-Chunk* chunk_get_neighbor(World* world, int x, int y, int z, Direction dir) {
-    int nx = x + offset_x(dir);
-    int ny = y + offset_y(dir);
-    int nz = z + offset_z(dir);
-
-    if (nx < 0 || nx >= WORLD_SIZE_X ||
-        ny < 0 || ny >= WORLD_SIZE_Y ||
-        nz < 0 || nz >= WORLD_SIZE_Z) {
+Chunk* world_get_chunk(World* world, int x, int y, int z) {
+    if (x < 0 || x >= WORLD_SIZE_X ||
+        y < 0 || y >= WORLD_SIZE_Y ||
+        z < 0 || z >= WORLD_SIZE_Z) {
         return NULL;
     }
-
-    return &world->chunks[world_get_chunk_index(nx, ny, nz)];
-}
-
-Chunk* world_get_chunk(World* world, int x, int y, int z) {
-    if (x < 0 || y < 0 || z < 0 || x >= WORLD_SIZE_X || y >= WORLD_SIZE_Y || z >= WORLD_SIZE_Z) return NULL;
     return &world->chunks[world_get_chunk_index(x, y, z)];
 }
 
-BlockType world_get_block(World* world, int x, int y, int z) {
-	// Check if the coordinates are inside the world
-    if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
-        y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
-        z < 0 || z >= CHUNK_SIZE * WORLD_SIZE_Z) {
-        return BLOCK_AIR;
-    }
-	int chunk_x = x / CHUNK_SIZE;
-	int chunk_y = y / CHUNK_SIZE;
-	int chunk_z = z / CHUNK_SIZE;
-
-	int block_x = x % CHUNK_SIZE;
-	int block_y = y % CHUNK_SIZE;
-	int block_z = z % CHUNK_SIZE;
-	
-	Chunk* chunk = &world->chunks[world_get_chunk_index(chunk_x, chunk_y, chunk_z)];
-	return chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)].type;
-}
-
-void world_set_block(World* world, int x, int y, int z, BlockType block) { // idk if it should return value
-    // Check if the coordinates are inside the world
+void world_set_block(World* world, int x, int y, int z, BlockType block) {
+    // check if the coordinates are inside the world
     if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
         y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
         z < 0 || z >= CHUNK_SIZE * WORLD_SIZE_Z) {
         return;
     }
+    
+    int ch_x = x / CHUNK_SIZE;
+    int ch_y = y / CHUNK_SIZE;
+    int ch_z = z / CHUNK_SIZE;
 
-    int chunk_x = x / CHUNK_SIZE;
-    int chunk_y = y / CHUNK_SIZE;
-    int chunk_z = z / CHUNK_SIZE;
+    int b_x = x % CHUNK_SIZE;
+    int b_y = y % CHUNK_SIZE;
+    int b_z = z % CHUNK_SIZE;
 
-    int block_x = x % CHUNK_SIZE;
-    int block_y = y % CHUNK_SIZE;
-    int block_z = z % CHUNK_SIZE;
+    Chunk* chunk = &world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z)];
+    chunk->blocks[chunk_get_block_index(b_x, b_y, b_z)].type = block;
+}
 
-    Chunk* chunk = &world->chunks[world_get_chunk_index(chunk_x, chunk_y, chunk_z)];
-    chunk->blocks[chunk_get_block_index(block_x, block_y, block_z)].type = block;
+BlockType world_get_block(World* world, int x, int y, int z) {
+	// check if the coordinates are inside the world
+    if (x < 0 || x >= CHUNK_SIZE * WORLD_SIZE_X ||
+        y < 0 || y >= CHUNK_SIZE * WORLD_SIZE_Y ||
+        z < 0 || z >= CHUNK_SIZE * WORLD_SIZE_Z) {
+        return BLOCK_AIR;
+    }
+	int ch_x = x / CHUNK_SIZE;
+	int ch_y = y / CHUNK_SIZE;
+	int ch_z = z / CHUNK_SIZE;
+
+	int b_x = x % CHUNK_SIZE;
+	int b_y = y % CHUNK_SIZE;
+	int b_z = z % CHUNK_SIZE;
+	
+	Chunk* chunk = &world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z)];
+	return chunk->blocks[chunk_get_block_index(b_x, b_y, b_z)].type;
+}
+
+void world_add_block(World* world, int x, int y, int z, BlockType block) {
+    world_set_block(world, x, y, z, block);
+
+    // chunk coordinates
+    int ch_x = x / CHUNK_SIZE;
+    int ch_y = y / CHUNK_SIZE;
+    int ch_z = z / CHUNK_SIZE;
+
+    // local block coordinates inside chunk
+    int b_x = x % CHUNK_SIZE;
+    int b_y = y % CHUNK_SIZE;
+    int b_z = z % CHUNK_SIZE;
+
+    // mark neighbors dirty if at chunk boundaries
+    // x
+    if (b_x == 0 && ch_x > 0) {
+        world->chunks[world_get_chunk_index(ch_x - 1, ch_y, ch_z)].dirty_light = true;
+    } else if (b_x == CHUNK_SIZE - 1 && ch_x < WORLD_SIZE_X - 1) {
+        world->chunks[world_get_chunk_index(ch_x + 1, ch_y, ch_z)].dirty_light = true;
+    }
+
+    // y
+    if (b_y == 0 && ch_y > 0) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y - 1, ch_z)].dirty_light = true;
+    } else if (b_y == CHUNK_SIZE - 1 && ch_y < WORLD_SIZE_Y - 1) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y + 1, ch_z)].dirty_light = true;
+    }
+
+    // z
+    if (b_z == 0 && ch_z > 0) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z - 1)].dirty_light = true;
+    } else if (b_z == CHUNK_SIZE - 1 && ch_z < WORLD_SIZE_Z - 1) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z + 1)].dirty_light = true;
+    }
+
+    // mark current chunk as dirty
+    world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z)].dirty_light = true;
+}
+
+void world_remove_block(World* world, int x, int y, int z) {
+    world_set_block(world, x, y, z, BLOCK_AIR);
+
+    // chunk coordinates
+    int ch_x = x / CHUNK_SIZE;
+    int ch_y = y / CHUNK_SIZE;
+    int ch_z = z / CHUNK_SIZE;
+
+    // local block coordinates inside chunk
+    int b_x = x % CHUNK_SIZE;
+    int b_y = y % CHUNK_SIZE;
+    int b_z = z % CHUNK_SIZE;
+
+    // mark neighbors dirty if at chunk boundaries
+    // x
+    if (b_x == 0 && ch_x > 0) {
+        world->chunks[world_get_chunk_index(ch_x - 1, ch_y, ch_z)].dirty_light = true;
+    } else if (b_x == CHUNK_SIZE - 1 && ch_x < WORLD_SIZE_X - 1) {
+        world->chunks[world_get_chunk_index(ch_x + 1, ch_y, ch_z)].dirty_light = true;
+    }
+
+    // y
+    if (b_y == 0 && ch_y > 0) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y - 1, ch_z)].dirty_light = true;
+    } else if (b_y == CHUNK_SIZE - 1 && ch_y < WORLD_SIZE_Y - 1) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y + 1, ch_z)].dirty_light = true;
+    }
+
+    // z
+    if (b_z == 0 && ch_z > 0) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z - 1)].dirty_light = true;
+    } else if (b_z == CHUNK_SIZE - 1 && ch_z < WORLD_SIZE_Z - 1) {
+        world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z + 1)].dirty_light = true;
+    }
+
+    // mark current chunk as dirty
+    world->chunks[world_get_chunk_index(ch_x, ch_y, ch_z)].dirty_light = true;
 }
 
 void world_init(World* world) {
@@ -172,28 +218,25 @@ void world_update_mesh(World* world) {
     for(int i = 0; i < MAX_WORLD_SIZE; i++) {
         if(!world->chunks[i].dirty) continue;
 
-        int x = i / (WORLD_SIZE_Y * WORLD_SIZE_Z);
-        int y = (i / WORLD_SIZE_Z) % WORLD_SIZE_Y;
-        int z = i % WORLD_SIZE_Z;
-
-        chunk_update_mesh(world, &world->chunks[i], x, y, z);
+        chunk_update_mesh(world, &world->chunks[i], i);
     }
 }
 
 void world_update_light(World* world) {
-    bool any_active;
-    do {
-        any_active = false;
+    bool any_dirty = true; // for first iteration
+    while(any_dirty) {
+        any_dirty = false;
 
         for (int i = 0; i < MAX_WORLD_SIZE; i++) {
             Chunk* chunk = &world->chunks[i];
-            if (chunk && chunk->active) {
-                chunk->active = false;
+            if (chunk && chunk->dirty_light) {
+                chunk->dirty_light = false;
                 chunk_update_light(world, chunk, i);
-                any_active = true;
+                chunk->dirty = true;
+                any_dirty = true;
             }
         }
-    } while (any_active);
+    }
 }
 
 void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
@@ -208,11 +251,8 @@ void world_draw(const RenderContext* ctx, World* world, Shader* shader) {
         int y = (i / WORLD_SIZE_Z) % WORLD_SIZE_Y;
         int z = i % WORLD_SIZE_Z;
         
-        // rebuild mesh if dirty
-        if(chunk->dirty) chunk_update_mesh(world, chunk, x, y, z);
-        
-        // check if in frustum
-		chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z); // check in frustum
+        // check if chunk is in frustum
+		chunk->visible = chunk_in_frustum(&ctx->frustum, x, y, z);
         if(!chunk->visible) continue;
 
         // set model matrix
